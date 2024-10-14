@@ -80,16 +80,11 @@ To run LUNA, you'll need to modify the configuration file found in `/configs/exp
   - Specify individual checkpoints, e.g., `['epoch=749.ckpt']`, if you only want to test specific models.
 - `save_dir`: Directory to save test results. Use `'./'` to save in the current directory, or set it to `'null'` to save in `checkpoints_parent_dir`.
 
-#### Example Setup
-You can customize all the above parameters based on your specific dataset and experiment. For example:
-- Modify the configuration under `dataset` to fit to your data.
-- Change the number of GPUs in use by specifying GPU parameters in the config.
 
-Once your configuration is ready, execute the script. Simply change the `experiment` value in `/configs/config.yaml` to point to your updated configuration file, and LUNA will be ready to run.
+Once your configuration is ready, execute the script. Simply change the `experiment` value in `/configs/config.yaml` to point to your updated configuration file, and LUNA will be ready to run by
 
-
-
-
+```python
+!python main.py 
 
 
 ## Data Availability
