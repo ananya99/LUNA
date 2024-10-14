@@ -1,7 +1,7 @@
 # LUNA
 
 <p align="center">
-<img src="https://github.com/mlbio-epfl/LUNA/image/Framework_LUNA.png" width="1100" align="center">
+<img src="https://github.com/mlbio-epfl/LUNA/blob/main/image/LUNA_Framework.png" width="1100" align="center">
 </p>
 
 LUNA is a Python package, written in PyTorch that generates tissue structures by predicting the spatial locations of individual cells based on their gene expression profiles. 
