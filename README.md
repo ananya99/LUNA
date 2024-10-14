@@ -84,7 +84,7 @@ To run LUNA, you'll need to modify the configuration file found in `/configs/exp
 Once your configuration is ready, execute the script. Simply change the `experiment` value in `/configs/config.yaml` to point to your updated configuration file, and LUNA will be ready to run by
 
 ```python
-!python main.py 
+python main.py 
 ```
 
 ## Data Availability
