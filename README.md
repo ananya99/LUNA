@@ -6,11 +6,12 @@
 
 **LUNA** is a Python package written in PyTorch designed to generate tissue structures by predicting the spatial locations of individual cells based on their gene expression profiles.
 
-### Input:
-- A **gene expression matrix** and **cell coordinates** from spatial transcriptomics data, ideally with section information and cell class annotations (`.csv` format).
+### Training Input:
+- A **gene expression matrix** and corresponding **cell coordinates** from spatial transcriptomics data, ideally accompanied by section information and cell class annotations. The input should be in `.csv` format.
 
-### Output:
-- De novo generated **2D spatial coordinates** of cells in the tissue based on the gene expression data (`.csv` format).
+### Testing Input and Output:
+- **Input**: A **gene expression matrix** for single cells in `.csv` format, which should have the same number of genes as the training data.
+- **Output**: Generated **2D spatial coordinates** of cells in the tissue, based on the input gene expression data, provided in `.csv` format.
 
 ---
 
