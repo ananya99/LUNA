@@ -1,0 +1,11 @@
+defaults:
+    - _self_
+    - experiment: MERFISH_mouse_cortex
+
+hydra:
+  job:
+    chdir: True
+  run:
+    dir: ../outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}-${general.name}
+
+
