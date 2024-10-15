@@ -1,5 +1,5 @@
 <p align="center">
-<img src="https://github.com/mlbio-epfl/LUNA/blob/main/image/LUNA.png" width="1100" align="center">
+<img src="https://github.com/mlbio-epfl/LUNA/blob/main/image/LUNA.png" width="400" align="center">
 </p>
 
 
