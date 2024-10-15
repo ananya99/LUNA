@@ -1,4 +1,7 @@
-# LUNA
+<p align="center">
+<img src="https://github.com/mlbio-epfl/LUNA/blob/main/image/LUNA.png" width="1100" align="center">
+</p>
+
 
 <p align="center">
 <img src="https://github.com/mlbio-epfl/LUNA/blob/main/image/LUNA_Framework.png" width="1100" align="center">
