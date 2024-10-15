@@ -1,4 +1,4 @@
-<p align="center">
+<p>
 <img src="https://github.com/mlbio-epfl/LUNA/blob/main/image/LUNA.png" width="400" align="center">
 </p>
 
