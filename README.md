@@ -50,7 +50,7 @@ pip install torch_geometric
 pip install lightning
 pip install scanpy wandb colorcet squidpy hydra-core linear_attention_transformer
 ```
-
+***
 ## Generating Tissue Structure Using LUNA
 
 ### Configuration
@@ -85,15 +85,15 @@ python main.py
 
 We provide a sample dataset from the [MERFISH Mouse Primary Motor Cortex Atlas](https://drive.google.com/file/d/1j5LRRQ66n8PpRKRmOhn9eRekgxuxw-fw/view?usp=drive_link) [1]. To use this dataset with LUNA, download it to your local machine, update the `data_path` in the configuration file to reflect this dataset's location, and execute `main.py` to run LUNA on this dataset.
 
-
-## Reference
-[1] Zhang, Meng, et al. "Spatially Resolved Cell Atlas of the Mouse Primary Motor Cortex by MERFISH." Nature 598.7879 (2021): 137-143.
-
 ***
 ## Contact
 
 If you have questions, please contact the authors of the method:
 - Yist YU - <tingyang.yu@epfl.ch>  
 - Maria Brbi'c - <mbrbic@epfl.ch>
+
+***
+## Reference
+[1] Zhang, Meng, et al. "Spatially Resolved Cell Atlas of the Mouse Primary Motor Cortex by MERFISH." Nature 598.7879 (2021): 137-143.
 
 
