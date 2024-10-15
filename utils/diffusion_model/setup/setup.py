@@ -6,12 +6,17 @@ import pickle
 import omegaconf
 import wandb
 from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import EarlyStopping, LearningRateMonitor, ModelCheckpoint
+from pytorch_lightning.callbacks import (
+    EarlyStopping,
+    LearningRateMonitor,
+    ModelCheckpoint,
+)
 
 from datasets.data_module import DataModule, Infos
 from diffusion_model import FullDenoisingDiffusion
 from utils.data.abstract_datatype import AbstractDataModule, AbstractDatasetInfos
 from utils.data.misc import setup_wandb
+
 
 def get_resume(
     cfg: omegaconf.DictConfig,
@@ -38,8 +43,13 @@ def get_resume(
     # Return the updated configuration and the loaded model
     return cfg, model
 
-def setup_dataset(cfg: omegaconf.DictConfig, dataset_path: pathlib.Path = None,
-                  dataset_infos_path: pathlib.Path = None, load_from_disk: bool = False) -> tuple:
+
+def setup_dataset(
+    cfg: omegaconf.DictConfig,
+    dataset_path: pathlib.Path = None,
+    dataset_infos_path: pathlib.Path = None,
+    load_from_disk: bool = False,
+) -> tuple:
     """Set up the dataset based on the configuration provided."""
     datamodule = DataModule(cfg)
     dataset_infos = Infos(datamodule, cfg)
@@ -75,17 +85,42 @@ def setup_model(
 
 def create_model_checkpoint_callbacks(cfg: omegaconf.DictConfig) -> list:
     """Create model checkpoint callbacks based on configuration."""
-    save_model = cfg.validation.save_model if cfg.validation.save_model is not None else True
-    save_top_k = cfg.validation.save_top_k_models if cfg.validation.save_top_k_models is not None else 20
-    monitor_metric = cfg.validation.check_val_monitor if cfg.validation.check_val_monitor else "val_loss/position_mse"
-    check_every_n_epochs = cfg.validation.check_val_every_n_epochs if cfg.validation.check_val_every_n_epochs is not None else 20
+    save_model = (
+        cfg.validation.save_model if cfg.validation.save_model is not None else True
+    )
+    save_top_k = (
+        cfg.validation.save_top_k_models
+        if cfg.validation.save_top_k_models is not None
+        else 20
+    )
+    monitor_metric = (
+        cfg.validation.check_val_monitor
+        if cfg.validation.check_val_monitor
+        else "val_loss/position_mse"
+    )
+    check_every_n_epochs = (
+        cfg.validation.check_val_every_n_epochs
+        if cfg.validation.check_val_every_n_epochs is not None
+        else 20
+    )
 
     callbacks = []
     if save_model:
-        callbacks.append(ModelCheckpoint(dirpath="checkpoints", filename="{epoch}",
-                                         monitor=monitor_metric, save_top_k=save_top_k,
-                                         mode="min", every_n_epochs=check_every_n_epochs))
-        callbacks.append(ModelCheckpoint(dirpath="checkpoints", filename="last_epoch", every_n_epochs=1))
+        callbacks.append(
+            ModelCheckpoint(
+                dirpath="checkpoints",
+                filename="{epoch}",
+                monitor=monitor_metric,
+                save_top_k=save_top_k,
+                mode="min",
+                every_n_epochs=check_every_n_epochs,
+            )
+        )
+        callbacks.append(
+            ModelCheckpoint(
+                dirpath="checkpoints", filename="last_epoch", every_n_epochs=1
+            )
+        )
 
     return callbacks
 
@@ -95,9 +130,15 @@ def create_lr_monitor_callback() -> LearningRateMonitor:
     return LearningRateMonitor(logging_interval="epoch")
 
 
-def create_early_stopping_callback(cfg: omegaconf.DictConfig, monitor_metric: str) -> EarlyStopping:
+def create_early_stopping_callback(
+    cfg: omegaconf.DictConfig, monitor_metric: str
+) -> EarlyStopping:
     """Create an early stopping callback based on configuration."""
-    return EarlyStopping(monitor=monitor_metric, patience=cfg.validation.early_stopping_patience, mode="min")
+    return EarlyStopping(
+        monitor=monitor_metric,
+        patience=cfg.validation.early_stopping_patience,
+        mode="min",
+    )
 
 
 def setup_callbacks(cfg: omegaconf.DictConfig, datamodule: AbstractDataModule) -> list:
@@ -106,7 +147,11 @@ def setup_callbacks(cfg: omegaconf.DictConfig, datamodule: AbstractDataModule) -
     callbacks.append(create_lr_monitor_callback())
 
     if cfg.validation.early_stopping:
-        monitor_metric = cfg.validation.check_val_monitor if cfg.validation.check_val_monitor else "val_loss/position_mse"
+        monitor_metric = (
+            cfg.validation.check_val_monitor
+            if cfg.validation.check_val_monitor
+            else "val_loss/position_mse"
+        )
         callbacks.append(create_early_stopping_callback(cfg, monitor_metric))
 
     return callbacks
@@ -114,13 +159,21 @@ def setup_callbacks(cfg: omegaconf.DictConfig, datamodule: AbstractDataModule) -
 
 def setup_trainer(cfg: omegaconf.DictConfig, callbacks: list) -> Trainer:
     """Set up the PyTorch Lightning Trainer based on the configuration and callbacks."""
-    fast_dev_run = cfg.train.fast_dev_run if cfg.train.fast_dev_run is not None else False
+    fast_dev_run = (
+        cfg.train.fast_dev_run if cfg.train.fast_dev_run is not None else False
+    )
     if fast_dev_run:
         print("[WARNING]: The model will run with fast_dev_run.")
 
-    gpus = cfg.distribute.gpus_per_node if cfg.distribute.gpus_per_node is not None else 1
+    gpus = (
+        cfg.distribute.gpus_per_node if cfg.distribute.gpus_per_node is not None else 1
+    )
     max_epochs = cfg.train.n_epochs if cfg.train.n_epochs is not None else 5000
-    check_val_every_n_epochs = cfg.validation.check_val_every_n_epochs if cfg.validation.check_val_every_n_epochs is not None else 0
+    check_val_every_n_epochs = (
+        cfg.validation.check_val_every_n_epochs
+        if cfg.validation.check_val_every_n_epochs is not None
+        else 0
+    )
 
     local_rank = int(os.environ.get("LOCAL_RANK", 0))
     if wandb.run and local_rank == 0:
@@ -135,5 +188,3 @@ def setup_trainer(cfg: omegaconf.DictConfig, callbacks: list) -> Trainer:
         log_every_n_steps=50 if fast_dev_run else 1,
         enable_progress_bar=cfg.general.enable_progress_bar,
     )
-
-

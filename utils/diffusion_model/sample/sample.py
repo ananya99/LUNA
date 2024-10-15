@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from utils.data.dataholder import DataHolder
 
+
 @torch.no_grad()
 def sample_noise(self, batch: DataHolder) -> torch.Tensor:
     """
@@ -25,8 +26,9 @@ def sample_noise(self, batch: DataHolder) -> torch.Tensor:
         cell_ID=cell_ID,
         node_mask=node_mask,
     )
-    
+
     return z_t.device_as(node_features)
+
 
 def iterate_sampling(self, z_t: torch.Tensor, batch: DataHolder) -> torch.Tensor:
     """
@@ -40,17 +42,22 @@ def iterate_sampling(self, z_t: torch.Tensor, batch: DataHolder) -> torch.Tensor
         torch.Tensor: The final sampled graph after diffusion.
     """
     sample_interval = 1  # Sample interval for the diffusion process
-    
+
     # Iteratively sample z_s from z_t for each diffusion step
     for s_int in reversed(range(0, self.max_diffusion_steps, sample_interval)):
-        s_array = torch.full((1, 1), s_int, dtype=torch.long, device=batch.node_features.device)
+        s_array = torch.full(
+            (1, 1), s_int, dtype=torch.long, device=batch.node_features.device
+        )
         z_s = sample_zs_from_zt(self, z_t, s_array)
         z_t = z_s
-    
+
     return z_t
 
+
 @torch.no_grad()
-def sample_from_single_graph(self, test: bool = True, batch: DataHolder = None) -> torch.Tensor:
+def sample_from_single_graph(
+    self, test: bool = True, batch: DataHolder = None
+) -> torch.Tensor:
     """
     Samples a batch with specified number of nodes for each graph.
 
@@ -67,11 +74,12 @@ def sample_from_single_graph(self, test: bool = True, batch: DataHolder = None) 
 
     # Sample noise z_t from the batch
     z_t = sample_noise(self, batch)
-    
+
     # Perform iterative sampling over diffusion steps
     sampled_graph = iterate_sampling(self, z_t, batch)
 
     return sampled_graph.positions
+
 
 def sample_zs_from_zt(self, z_t: torch.Tensor, s_int: torch.Tensor) -> torch.Tensor:
     """
@@ -87,6 +95,7 @@ def sample_zs_from_zt(self, z_t: torch.Tensor, s_int: torch.Tensor) -> torch.Ten
     pred = self.forward(z_t)
     z_s = self.noise_model.sample_zs_from_zt_and_pred(z_t=z_t, pred=pred, s_int=s_int)
     return z_s
+
 
 @torch.no_grad()
 def sample_graphs(self, batch: DataHolder, test: bool) -> list[torch.Tensor]:
@@ -105,5 +114,5 @@ def sample_graphs(self, batch: DataHolder, test: bool) -> list[torch.Tensor]:
 
     sample = sample_from_single_graph(self, test=test, batch=batch)
     samples.extend(sample)
-        
+
     return samples

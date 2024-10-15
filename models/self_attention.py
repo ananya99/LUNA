@@ -1,4 +1,3 @@
-
 from typing import Tuple
 import torch
 import torch.nn as nn
@@ -64,19 +63,16 @@ class SelfAttention(nn.Module):
         )
         # Node Transformation (Attention)
         total_feature_dim = (
-            node_features_dimensions
-            + delta_dimensions
-            + diffusion_time_dimensions
+            node_features_dimensions + delta_dimensions + diffusion_time_dimensions
         )
         self.lin_node_features = torch.nn.Linear(
             node_features_dimensions, node_features_dimensions
         )
-        self.concatenated_features = torch.nn.Linear(total_feature_dim, node_features_dimensions)
+        self.concatenated_features = torch.nn.Linear(
+            total_feature_dim, node_features_dimensions
+        )
         self.attention = LinearAttentionTransformer(
-            dim=node_features_dimensions,
-            heads=num_heads,
-            depth=1,
-            max_seq_len=70000
+            dim=node_features_dimensions, heads=num_heads, depth=1, max_seq_len=70000
         )
         self.head_features_to_position = torch.nn.Linear(num_heads * self.head_dim, 2)
 
@@ -84,15 +80,17 @@ class SelfAttention(nn.Module):
         self.last_layer = last_layer
         if not last_layer:
             self.y_y = Linear(diffusion_time_dimensions, diffusion_time_dimensions)
-    
+
     def transform_positions_for_attention(self, positions, node_mask):
         positions = positions * node_mask
         norm_positions = torch.norm(positions, dim=-1, keepdim=True)
         normalized_position = positions / (norm_positions + 1e-7)
-        
-        transformed_positons = self.transform_positions_for_attn_mlp(normalized_position)
+
+        transformed_positons = self.transform_positions_for_attn_mlp(
+            normalized_position
+        )
         return transformed_positons
-    
+
     def transform_node_features(
         self,
         node_features: torch.Tensor,
@@ -102,7 +100,6 @@ class SelfAttention(nn.Module):
         e_mask1: torch.Tensor,
         e_mask2: torch.Tensor,
     ) -> torch.Tensor:
-
         transformed_X = self.lin_node_features(node_features)
         transformed_delta = self.transform_positions_for_attention(positions, node_mask)
         transformed_time = diffusion_time.unsqueeze(1).expand(

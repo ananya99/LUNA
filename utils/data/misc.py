@@ -33,7 +33,7 @@ def to_batch(data: DataHolder, device=None) -> DataHolder:
         pass
     else:
         raise ValueError("cell_class has wrong dimensionality")
-    try :
+    try:
         cell_ID, _ = to_dense_batch(x=data.cell_ID, batch=data.batch)
         if cell_ID.dim() == 2:
             cell_ID = cell_ID.unsqueeze(-1)

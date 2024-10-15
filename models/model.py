@@ -74,7 +74,7 @@ class Model(nn.Module):
             nn.Linear(self.input_dimensions_diffusion_time, hidden_mlp_dims["y"]),
             act_fn_in,
             nn.Linear(hidden_mlp_dims["y"], hidden_dims["dy"]),
-            act_fn_in, 
+            act_fn_in,
         )
 
         # MLP for processing input positions
@@ -104,7 +104,9 @@ class Model(nn.Module):
         )
 
         self.mlp_out_pos_norm = nn.Sequential(
-            nn.Linear(hidden_dims["output_features_to_pos_dims"] + 3, hidden_mlp_dims["X"]),
+            nn.Linear(
+                hidden_dims["output_features_to_pos_dims"] + 3, hidden_mlp_dims["X"]
+            ),
             act_fn_out,
             nn.Linear(hidden_mlp_dims["X"], 1),
         )
@@ -147,10 +149,12 @@ class Model(nn.Module):
         transformed_node_features = self.mlp_out_node_features(
             transformed_features.node_features
         )
-        
+
         pos = transformed_features.positions
         norm = torch.norm(pos, dim=-1, keepdim=True)  # bs, n, 1
-        new_norm = self.mlp_out_pos_norm(torch.cat([transformed_node_features, pos, norm], dim=-1))  # bs, n, 1
+        new_norm = self.mlp_out_pos_norm(
+            torch.cat([transformed_node_features, pos, norm], dim=-1)
+        )  # bs, n, 1
         new_pos = pos * new_norm / (norm + self.positionMLP_eps)
 
         new_pos = new_pos * node_mask.unsqueeze(-1)

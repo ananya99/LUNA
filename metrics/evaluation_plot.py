@@ -1,15 +1,7 @@
-from collections import Counter
-
 import colorcet as cc
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-import scanpy as sc
 import seaborn as sns
-import squidpy as sq
-from scipy.spatial.distance import cdist, jensenshannon
-
-from utils.data.load import create_anndata
 
 # Configuration settings for plots
 SCATTER_SIZE = 25
@@ -90,7 +82,6 @@ def create_scatter_plot(
     )
 
 
-
 def plot_scatter_visualization(metadata_true, metadata_pred, uniques, dir):
     fig, axarr = plt.subplots(1, 2, figsize=(16, 6))
 
@@ -108,7 +99,7 @@ def plot_scatter_visualization(metadata_true, metadata_pred, uniques, dir):
         s=15,
         ax=axarr[0],
         palette=palette_dict,
-        legend=False  # Do not automatically create a legend
+        legend=False,  # Do not automatically create a legend
     )
     g1.set_xlabel("X", fontsize=14)  # Adjust X-axis label font size
     g1.set_ylabel("Y", fontsize=14)  # Adjust Y-axis label font size
@@ -123,20 +114,33 @@ def plot_scatter_visualization(metadata_true, metadata_pred, uniques, dir):
         s=15,
         ax=axarr[1],
         palette=palette_dict,
-        legend=False  # Do not automatically create a legend
+        legend=False,  # Do not automatically create a legend
     )
     g2.set_xlabel("X", fontsize=14)  # Adjust X-axis label font size
     g2.set_ylabel("Y", fontsize=14)  # Adjust Y-axis label font size
 
     # Create custom legend
-    legend_elements = [plt.Line2D([0], [0], marker='o', color='w', label=cat,
-                                  markerfacecolor=palette_dict[cat], markersize=10)
-                       for cat in uniques]
+    legend_elements = [
+        plt.Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="w",
+            label=cat,
+            markerfacecolor=palette_dict[cat],
+            markersize=10,
+        )
+        for cat in uniques
+    ]
     ncol = len(uniques) // 4  # Number of columns in the legend
-    fig.legend(handles=legend_elements, loc='upper center', ncol=ncol, bbox_to_anchor=(0.5, -0.05))
+    fig.legend(
+        handles=legend_elements,
+        loc="upper center",
+        ncol=ncol,
+        bbox_to_anchor=(0.5, -0.05),
+    )
 
     # Save the plot
     path = f"{dir}/class_scatter_plot.pdf"
     plt.savefig(path, bbox_inches="tight", dpi=300)
     plt.close()
-

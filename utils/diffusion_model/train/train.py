@@ -52,7 +52,6 @@ def training_step_func(self, data: DataHolder, i: int) -> torch.Tensor:
     return loss
 
 
-
 def on_train_epoch_end_func(self) -> None:
     """
     Callback function called at the end of each training epoch.
@@ -61,6 +60,7 @@ def on_train_epoch_end_func(self) -> None:
     - None
     """
     pass
+
 
 def on_train_epoch_start_func(self) -> None:
     """

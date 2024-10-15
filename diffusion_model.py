@@ -6,15 +6,21 @@ from utils.data.dataholder import DataHolder
 from utils.data.misc import setup_wandb
 from utils.diffusion_model.diffusion.noise_model import NoiseModel
 
-from utils.diffusion_model.test.test import (on_test_epoch_end_func,
-                                             on_test_epoch_start_func,
-                                             test_step_func)
-from utils.diffusion_model.train.train import (on_train_epoch_end_func,
-                                               on_train_epoch_start_func,
-                                               training_step_func)
+from utils.diffusion_model.test.test import (
+    on_test_epoch_end_func,
+    on_test_epoch_start_func,
+    test_step_func,
+)
+from utils.diffusion_model.train.train import (
+    on_train_epoch_end_func,
+    on_train_epoch_start_func,
+    training_step_func,
+)
 from utils.diffusion_model.validation.val import (
-    on_validation_epoch_end_func, on_validation_epoch_start_func,
-    validation_step_func)
+    on_validation_epoch_end_func,
+    on_validation_epoch_start_func,
+    validation_step_func,
+)
 
 
 class FullDenoisingDiffusion(pl.LightningModule):
@@ -38,7 +44,6 @@ class FullDenoisingDiffusion(pl.LightningModule):
         self.output_dims = dataset_infos.output_dims
         self.train_loss = LossFunction()
         self.val_loss = LossFunction()
-        
 
         self.model = Model(
             input_dims=self.input_dims,
@@ -86,7 +91,7 @@ class FullDenoisingDiffusion(pl.LightningModule):
         return self.model(model_input)
 
     def on_fit_start(self) -> None:
-        self.train_iterations = 100  
+        self.train_iterations = 100
         if self.local_rank == 0:
             setup_wandb(self.cfg)
 

@@ -2,8 +2,9 @@ import torch
 import wandb
 from utils.data.dataholder import DataHolder
 from utils.data.load import remove_mean_with_mask
-from utils.diffusion_model.diffusion.diffusion_utils import \
-    cosine_beta_schedule_discrete
+from utils.diffusion_model.diffusion.diffusion_utils import (
+    cosine_beta_schedule_discrete,
+)
 
 
 class NoiseModel:
@@ -266,7 +267,7 @@ class NoiseModel:
             device=data.node_features.device,
         )
         t_float = t_int.float() / self.max_diffusion_steps
-        
+
         if wandb.run is not None and train_flag:
             wandb.log({"t_int/histogram": wandb.Histogram(t_int[0].cpu().numpy())})
             wandb.log({"t_int/record": t_int[0].cpu().numpy()})
@@ -331,7 +332,7 @@ class NoiseModel:
         positions = torch.randn(
             node_mask.shape[0], node_mask.shape[1], 2, device=node_mask.device
         )
-        
+
         torch.manual_seed(0)
 
         # Apply node mask to the sampled positions

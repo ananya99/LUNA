@@ -64,7 +64,7 @@ class TransformerLayer(nn.Module):
             num_heads=num_heads,
             last_layer=last_layer,
         )
-        
+
         self.lin_node_features_1 = Linear(
             node_features_dimensions, dim_ff_node_features, **kw
         )
@@ -80,7 +80,7 @@ class TransformerLayer(nn.Module):
         self.dropout_node_features_1 = Dropout(dropout)
         self.dropout_node_features_2 = Dropout(dropout)
         self.dropout_node_features_3 = Dropout(dropout)
-    
+
         self.norm_positions_1 = SE3Norm(eps=1e-8, **kw)
 
         self.last_layer = last_layer

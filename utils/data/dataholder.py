@@ -1,16 +1,19 @@
 import torch
 
+
 def to_device(tensor, device):
     """
     Moves the tensor to the specified device if the tensor is not None.
     """
     return tensor.to(device) if tensor is not None else None
 
+
 def apply_mask(tensor, mask, mask_dim=-1):
     """
     Applies a mask to a tensor by broadcasting the mask along the last dimension.
     """
     return tensor * mask.unsqueeze(mask_dim) if tensor is not None else None
+
 
 def center_positions(positions, mask):
     """
@@ -20,6 +23,7 @@ def center_positions(positions, mask):
         masked_positions = positions[i][mask[i]]
         positions[i][mask[i]] = masked_positions - masked_positions.mean(dim=0)
     return positions
+
 
 class DataHolder:
     def __init__(
@@ -70,7 +74,7 @@ class DataHolder:
         self.positions = apply_mask(self.positions, node_mask)
         if self.positions is not None:
             self.positions = center_positions(self.positions, node_mask)
-        
+
         self.cell_class = apply_mask(self.cell_class, node_mask)
         self.cell_ID = apply_mask(self.cell_ID, node_mask)
 
@@ -91,7 +95,9 @@ class DataHolder:
         """
         return DataHolder(
             positions=self.positions.clone() if self.positions is not None else None,
-            node_features=self.node_features.clone() if self.node_features is not None else None,
+            node_features=self.node_features.clone()
+            if self.node_features is not None
+            else None,
             cell_class=self.cell_class.clone() if self.cell_class is not None else None,
             diffusion_time=self.diffusion_time,
             cell_ID=self.cell_ID.clone() if self.cell_ID is not None else None,
@@ -105,14 +111,14 @@ class DataHolder:
         Extracts a single batch from the batches object.
         """
         extract = lambda x: x[index].unsqueeze(0) if batch_size == 1 else x[index]
-        
+
         dense_data = DataHolder(
             node_features=extract(batches.node_features),
             positions=extract(batches.positions),
             node_mask=extract(batches.node_mask),
             cell_ID=extract(batches.cell_ID) if batches.cell_ID is not None else None,
             cell_class=extract(batches.cell_class),
-            diffusion_time=None  # Adjust as needed
+            diffusion_time=None,  # Adjust as needed
         )
         return dense_data
 
