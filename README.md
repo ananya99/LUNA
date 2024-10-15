@@ -55,8 +55,6 @@ pip install scanpy wandb colorcet squidpy hydra-core linear_attention_transforme
 
 ## Generating Tissue Structure Using LUNA
 
-### Configuration
-
 To use LUNA, begin by adjusting the settings in the configuration file located at `/configs/experiment`. This file, which leverages [Hydra](https://hydra.cc/docs/intro/) for managing configurations, contains essential parameters like the experiment name, dataset paths, and training/testing splits. Run the `main.py` file to start the experiment. Here is a breakdown of the critical elements in the configuration file:
 
 #### General Settings
