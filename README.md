@@ -2,15 +2,15 @@
 <img src="https://github.com/mlbio-epfl/LUNA/blob/main/image/LUNA.png" width="400" align="center">
 </p>
 
+**LUNA** is a Python package written in [PyTorch](https://pytorch.org/) that predicts spatial locations of cells from gene expression profiles. It employs a diffusion-based generative model that captures the complex spatial interrelationships of cells within tissues, enabling de novo reconstruction of cell locations. The single-cell and spatial datasets should be derived from the same anatomical region or tissue type and share a common set of genes. During training, LUNA learns spatial priors over existing spatial transcriptomics data. At inference stage, LUNA generates complex tissue structures solely from gene expressions of dissociated cell
 
 <p align="center">
 <img src="https://github.com/mlbio-epfl/LUNA/blob/main/image/LUNA_Framework.png" width="1100" align="center">
 </p>
 
-**LUNA** is a Python package written in PyTorch designed to generate tissue structures by predicting the spatial locations of individual cells based on their gene expression profiles. LUNA is a generative diffusion model that learns cell embeddings that capture each cell's spatial position relative to others based on their gene expression profiles. During inference, LUNA starts with random Gaussian noise and reconstructs cell locations de novo, guided by spatial priors learned during training. 
 
 Training Input:
-- A **gene expression matrix** and corresponding **cell coordinates** from spatial transcriptomics data, ideally accompanied by section information and cell class annotations. The input should be in `.csv` format.
+- A **gene expression matrix** and corresponding **cell coordinates** from spatial transcriptomics data, accompanied by section information and ideally cell class annotations. The input should be in `.csv` format.
 
 Testing Input and Output:
 - **Input**: A **gene expression matrix** for single cells in `.csv` format, which should have the same number of genes as the training data.
@@ -25,8 +25,8 @@ To train LUNA, prepare the input `.csv` file where:
 - Rows represent **cells**.
 - Columns represent **features** such as:
   - **2D coordinates** of cells (`'X'`, `'Y'`).
-  - **Section information** of cells.
-  - **Gene expression matrix** (preprocessed, preferably log2-transformed).
+  - **Section information** of cells (`regions`).
+  - **Gene expression matrix** (preprocessed cell by gene matrix, preferably log2-transformed).
 
 ---
 
@@ -57,10 +57,9 @@ pip install scanpy wandb colorcet squidpy hydra-core linear_attention_transforme
 
 ### Configuration
 
-To run LUNA, you'll need to modify the configuration file found in `/configs/experiment`, and then run the `main.py` file. The configuration file contains all the necessary settings for your experiment, such as the experiment name, dataset paths, and training/test split. Below is a guide to the key components of the configuration:
+To use LUNA, begin by adjusting the settings in the configuration file located at `/configs/experiment`. This file, which leverages [Hydra](https://hydra.cc/docs/intro/) for managing configurations, contains essential parameters like the experiment name, dataset paths, and training/testing splits. Run the `main.py` file to start the experiment. Here is a breakdown of the critical elements in the configuration file:
 
 #### General Settings
-- `name`: Set the name of your experiment. For example, `'MERFISH_mouse_cortex'` works well for a mouse cortex dataset.
 - `mode`: Defines the mode to run the model. Options include:
   - `'train_and_test'`: Train the model and then automatically run tests.
   - `'test_only'`: Skip training and load checkpoints for testing only.
@@ -69,12 +68,6 @@ To run LUNA, you'll need to modify the configuration file found in `/configs/exp
 - `dataset_name`: Name of the dataset you are working with.
 - `data_path`: Path to your dataset’s `.csv` file.
 - `gene_columns_start` and `gene_columns_end`: Indicate the starting and ending columns for gene expression data in your dataset.
-- `coordinate_X_column_name` and `coordinate_Y_column_name`: The column names for X and Y cell coordinates in your data.
-- `cell_type_column_name`: Column for cell type annotations (used for evaluation).
-- `section_column_name`: Column for the dataset section or region.
-- `train_regions`: List of regions/slices to use for training. You can modify this list to include specific slices.
-- `test_regions`: List of regions/slices to use for testing. Adjust the list to reflect your test dataset.
-- `validation_regions`: List of regions used for validation during training (optional).
 
 #### Test Settings
 - `checkpoints_parent_dir`: Directory path containing the checkpoints. This setting is only used in `'test_only'` mode. If running `'train_and_test'`, set this to `'null'`.
@@ -82,7 +75,6 @@ To run LUNA, you'll need to modify the configuration file found in `/configs/exp
   - Use `'all'` to test every checkpoint in the `checkpoints_parent_dir`.
   - Specify individual checkpoints, e.g., `['epoch=749.ckpt']`, if you only want to test specific models.
 - `save_dir`: Directory to save test results. Use `'./'` to save in the current directory, or set it to `'null'` to save in `checkpoints_parent_dir`.
-
 
 Once your configuration is ready, execute the script. Simply change the `experiment` value in `/configs/config.yaml` to point to your updated configuration file, and LUNA will be ready to run by
 
@@ -105,6 +97,11 @@ python main.py
 
 
 
+***
+## Contact
 
+If you have questions, please contact the authors of the method:
+- Yist YU - <tingyang.yu@epfl.ch>  
+- Maria Brbi'c - <mbrbic@epfl.ch>
 
 
