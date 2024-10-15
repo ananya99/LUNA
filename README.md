@@ -89,7 +89,7 @@ We provide a sample dataset from the [MERFISH Mouse Primary Motor Cortex Atlas](
 
 If you have questions, please contact the authors of the method:
 - Yist YU - <tingyang.yu@epfl.ch>  
-- Maria Brbi'c - <mbrbic@epfl.ch>
+- Maria Brbic - <mbrbic@epfl.ch>
 
 ## Reference
 [1] Zhang, Meng, et al. "Spatially Resolved Cell Atlas of the Mouse Primary Motor Cortex by MERFISH." Nature 598.7879 (2021): 137-143.
