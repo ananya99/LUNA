@@ -55,6 +55,8 @@ pip install scanpy wandb colorcet squidpy hydra-core linear_attention_transforme
 
 ## Generating Tissue Structure Using LUNA
 
+### Configuration
+
 To use LUNA, begin by adjusting the settings in the configuration file located at `/configs/experiment`. This file, which leverages [Hydra](https://hydra.cc/docs/intro/) for managing configurations, contains essential parameters like the experiment name, dataset paths, and training/testing splits. Run the `main.py` file to start the experiment. Here is a breakdown of the critical elements in the configuration file:
 
 #### General Settings
@@ -79,6 +81,11 @@ Once your configuration is ready, execute the script. Simply change the `experim
 ```python
 python main.py 
 ```
+
+### Example Usage
+
+We provide a sample dataset from the [MERFISH Mouse Primary Motor Cortex Atlas](https://drive.google.com/file/d/1j5LRRQ66n8PpRKRmOhn9eRekgxuxw-fw/view?usp=drive_link). To use this dataset with LUNA, download it to your local machine, update the `data_path` in the configuration file to reflect this dataset's location, and execute `main.py` to run LUNA on this dataset.
+
 
 ## Data Availability
 
