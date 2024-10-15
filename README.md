@@ -83,23 +83,11 @@ python main.py
 
 ### Example Usage
 
-We provide a sample dataset from the [MERFISH Mouse Primary Motor Cortex Atlas](https://drive.google.com/file/d/1j5LRRQ66n8PpRKRmOhn9eRekgxuxw-fw/view?usp=drive_link). To use this dataset with LUNA, download it to your local machine, update the `data_path` in the configuration file to reflect this dataset's location, and execute `main.py` to run LUNA on this dataset.
+We provide a sample dataset from the [MERFISH Mouse Primary Motor Cortex Atlas](https://drive.google.com/file/d/1j5LRRQ66n8PpRKRmOhn9eRekgxuxw-fw/view?usp=drive_link) [1]. To use this dataset with LUNA, download it to your local machine, update the `data_path` in the configuration file to reflect this dataset's location, and execute `main.py` to run LUNA on this dataset.
 
 
-## Data Availability
-
-|Link|Description|
-|----|-----------|
-|https://alleninstitute.github.io/abc_atlas_access/descriptions/Zhuang-ABCA-1.html|MERFISH Whole Mouse Brain Atlas (ABC Atlas) for Animal 1|
-|https://alleninstitute.github.io/abc_atlas_access/descriptions/Zhuang-ABCA-2.html|MERFISH Whole Mouse Brain Atlas (ABC Atlas) for Animal 2|
-|https://doi.brainimagelibrary.org/doi/10.35077/g.21|MERFISH Mouse Primary Motor Cortex Atlas (Brain Image Library)|
-|https://singlecell.broadinstitute.org/single_cell/study/SCP1830|scRNA-seq Mouse Central Nervous System Atlas (Single Cell Portal)|
-|https://singlecell.broadinstitute.org/single_cell/study/SCP2170/slide-tags-snrna-seq-on-mouse-embryonic-e14-brain|Slide-tags Datasets: Mouse Embryonic Brain (SCP2170)|
-|https://singlecell.broadinstitute.org/single_cell/study/SCP2167/slide-tags-snrna-seq-on-human-prefrontal-cortex|Slide-tags Datasets: Human Brain (SCP2167)|
-|https://singlecell.broadinstitute.org/single_cell/study/SCP2169/slide-tags-snrna-seq-on-human-tonsil|Slide-tags Datasets: Human Tonsil (SCP2169)|
-|https://singlecell.broadinstitute.org/single_cell/study/SCP2171/slide-tags-snrna-seq-on-human-melanoma|Slide-tags Datasets: Human Melanoma (SCP2171)|
-
-
+## Reference
+[1] Zhang, Meng, et al. "Spatially Resolved Cell Atlas of the Mouse Primary Motor Cortex by MERFISH." Nature 598.7879 (2021): 137-143.
 
 ***
 ## Contact
