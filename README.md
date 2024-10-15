@@ -2,7 +2,7 @@
 <img src="https://github.com/mlbio-epfl/LUNA/blob/main/image/LUNA.png" width="400" align="center">
 </p>
 
-**LUNA** is a Python package written in [PyTorch](https://pytorch.org/) that predicts spatial locations of cells from gene expression profiles. It employs a diffusion-based generative model that captures the complex spatial interrelationships of cells within tissues, enabling de novo reconstruction of cell locations. The single-cell and spatial datasets should be derived from the same anatomical region or tissue type and share a common set of genes. During training, LUNA learns spatial priors over existing spatial transcriptomics data. At inference stage, LUNA generates complex tissue structures solely from gene expressions of dissociated cell
+**LUNA** is a Python package written in [PyTorch](https://pytorch.org/) that predicts spatial locations of cells from gene expression profiles. It employs a diffusion-based generative model that captures the complex spatial interrelationships of cells within tissues, enabling de novo reconstruction of cell locations. The single-cell and spatial datasets should be derived from the same anatomical region or tissue type and share a common set of genes. During training, LUNA learns spatial priors over existing spatial transcriptomics data. At inference stage, LUNA generates complex tissue structures solely from gene expressions of dissociated cells.
 
 <p align="center">
 <img src="https://github.com/mlbio-epfl/LUNA/blob/main/image/LUNA_Framework.png" width="1100" align="center">
