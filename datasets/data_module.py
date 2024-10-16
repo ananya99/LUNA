@@ -134,7 +134,6 @@ class Dataset(InMemoryDataset):
                 "cell_ID",
             ]
         }
-        print(slice_)
 
     def _generate_slice_indices(self):
         slices = self.input_data["cell_section"].values
