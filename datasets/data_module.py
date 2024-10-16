@@ -12,7 +12,7 @@ from utils.data.load import (
     character_to_int,
     detect_nan_rows,
     position_normalize,
-    standardise_dataframe_colnames,
+    standardise_dataframe_colnames
 )
 from torch.utils.data import DataLoader
 from torch_geometric.data import Batch
@@ -33,32 +33,16 @@ class Dataset(InMemoryDataset):
         self.split = split
         self.name = cfg.dataset.dataset_name
         self.input_data = input_data
-        self.num_cell_class = len(input_data["c"].unique())
+        self.num_cell_class = len(input_data["cell_class"].unique())
         self.cfg = cfg
         self._data, self.slices = Data(), {}
 
         # Dataset processing pipeline
-        self.process_data_split()
         self.process_data()
         self.process_slices()
 
-    def process_data_split(self) -> None:
-        train_regions = self.cfg.dataset.train_regions
-        validation_regions = self.cfg.dataset.validation_regions
-        test_regions = self.cfg.dataset.test_regions
-        if self.split == "train":
-            self.input_data = self._process_split(train_regions, "train")
-        elif self.split == "validation":
-            self.input_data = self._process_split(validation_regions, "validation")
-        else:
-            self.input_data = self._process_split(test_regions, "test")
-
-    def _process_split(self, regions: list, split_type: str) -> pd.DataFrame:
-        print(f"Loading {split_type} data")
-        return self.input_data.loc[self.input_data["regions"].isin(regions)]
-
     def process_data(self) -> None:
-        self.input_data = self.input_data.sort_values("regions", ignore_index=False)
+        self.input_data = self.input_data.sort_values("cell_section", ignore_index=False)
         gene_names = self.filter_genes()
 
         # Normalize coordinates
@@ -86,9 +70,9 @@ class Dataset(InMemoryDataset):
         )
 
     def _convert_data_to_tensors(self, gene_names: list):
-        positions = torch.tensor(self.input_data[["x", "y"]].values).float()
+        positions = torch.tensor(self.input_data[["coord_X", "coord_Y"]].values).float()
         node_features = torch.tensor(self.input_data[gene_names].values).float()
-        cell_class = self.input_data["c"]
+        cell_class = self.input_data["cell_class"]
         unique_class = sorted(list(cell_class.unique()))
         cell_class, cell_class_decoder = character_to_int(
             list(cell_class.values), unique_class
@@ -126,7 +110,7 @@ class Dataset(InMemoryDataset):
 
     def _create_region_mapping_dict(self):
         num_cell_to_region_mapping_dict = (
-            self.input_data.groupby("regions").size().to_dict()
+            self.input_data.groupby("cell_section").size().to_dict()
         )
         return {v: k for k, v in num_cell_to_region_mapping_dict.items()}
 
@@ -147,15 +131,13 @@ class Dataset(InMemoryDataset):
                 "node_features",
                 "positions",
                 "cell_class",
-                "cell_class_features",
-                "gene_name_features",
                 "cell_ID",
             ]
         }
         print(slice_)
 
     def _generate_slice_indices(self):
-        slices = self.input_data["regions"].values
+        slices = self.input_data["cell_section"].values
         current_slice, slice_start, slice_ = slices[0], 0, []
 
         for i in range(1, len(slices)):
@@ -169,20 +151,26 @@ class Dataset(InMemoryDataset):
 
 class DataModule(AbstractDataModule):
     def __init__(self, cfg):
-        data = self.data_loading(cfg)
-        self.train_dataset = self._initialize_dataset("train", data, cfg)
-        self.validation_dataset = self._initialize_dataset("validation", data, cfg)
-        self.test_dataset = self._initialize_dataset("test", data, cfg)
+        train_data = self.data_loading(cfg, 'train')
+        test_data = self.data_loading(cfg, 'test')
+        self.train_dataset = self._initialize_dataset("train", train_data, cfg)
+        self.test_dataset = self._initialize_dataset("test", test_data, cfg)
+
+        if cfg.dataset.validation_data_path:
+            validation_data = self.data_loading(cfg, 'validation')
+            self.validation_dataset = self._initialize_dataset("validation", validation_data, cfg)
+        else:
+            self.validation_dataset = None
 
         self.statistics = {
             "train": self.train_dataset.statistics,
-            "validation": self.validation_dataset.statistics,
+            "validation": self.validation_dataset.statistics if self.validation_dataset else None,
             "test": self.test_dataset.statistics,
         }
         super().__init__(
             cfg,
             train_dataset=self.train_dataset,
-            val_dataset=self.validation_dataset,
+            val_dataset=self.validation_dataset if self.validation_dataset else None,
             test_dataset=self.test_dataset,
         )
 
@@ -211,10 +199,20 @@ class DataModule(AbstractDataModule):
         )
         return batch_data
 
-    def data_loading(self, cfg: omegaconf.DictConfig) -> pd.DataFrame:
-        data_path = cfg.dataset.data_path
-        input_data = pd.read_csv(f"{data_path}", index_col=0)
-        return standardise_dataframe_colnames(cfg.dataset, input_data)
+    def data_loading(self, cfg: omegaconf.DictConfig, split) -> pd.DataFrame:
+        if split == 'train':
+            data_path = cfg.dataset.train_data_path
+        elif split == 'validation':
+            data_path = cfg.dataset.validation_data_path
+        else:
+            data_path = cfg.dataset.test_data_path
+        data = pd.read_csv(f"{data_path}", index_col=0)
+        
+        # Ensure that the data contains the necessary columns, if not call standardise_dataframe_colnames:
+        data = standardise_dataframe_colnames(data)
+        assert all(column in data.columns for column in ['coord_X', 'coord_Y', 'cell_section', 'cell_class'])
+        
+        return data
 
 
 class Infos(AbstractDatasetInfos):

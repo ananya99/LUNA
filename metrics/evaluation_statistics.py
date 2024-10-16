@@ -54,10 +54,10 @@ def prepare_metadata_for_kabsch(
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Prepare metadata for Kabsch algorithm by padding Z axis."""
     metadata_true_filtered = np.pad(
-        metadata_true[["x", "y"]].to_numpy(), ((0, 0), (0, 1)), mode="constant"
+        metadata_true[["coord_X", "coord_Y"]].to_numpy(), ((0, 0), (0, 1)), mode="constant"
     )
     metadata_pred_filtered = np.pad(
-        metadata_pred[["x", "y"]].to_numpy(), ((0, 0), (0, 1)), mode="constant"
+        metadata_pred[["coord_X", "coord_Y"]].to_numpy(), ((0, 0), (0, 1)), mode="constant"
     )
 
     metadata_true_filtered = filter_nan_inf(metadata_true_filtered)

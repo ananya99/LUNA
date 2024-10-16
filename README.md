@@ -9,24 +9,24 @@
 </p>
 
 Input:
-- A **gene expression matrix** and corresponding **cell coordinates** from spatial transcriptomics data, accompanied by section information and ideally cell class annotations. The files should be in `.csv` format.
-- A separate **gene expression matrix** for single cells, also in `.csv` format, for testing purposes. This matrix should contain the same number of genes as the training dataset.
+- A **gene expression matrix** along with the corresponding **cell coordinates** from spatial transcriptomics data, accompanied by section information. The files should be in `.csv` format, and is used for model training.
+- A **gene expression matrix** for single cells lacking spatial information, accompanied ideally by cell class annotations (for visualization purpose). This matrix should contain the same number of genes as the training dataset. The files should be in `.csv` format, and is used for model inference. 
 
 Output:
-- **Output**: The generated **2D spatial coordinates** of cells, based on their gene expression data, provided in `.csv` format.
+- The generated **2D spatial coordinates** of cells, based on their gene expression data, provided in `.csv` format.
 
 ---
 
 ## Setting up LUNA
 
 ### Prepare the Dataset
-To effectively train LUNA, organize your input `.csv` file in the following format:
-- **Rows** represent **cells** and include data from both the training and testing datasets.
+To effectively train LUNA, organize your input `.csv` files in the following format:
+- **Rows** represent **cells**.
 - **Columns** represent **features**, detailed as follows:
   - **2D Coordinates**: Use `'coord_X'` and `'coord_Y'` for spatial coordinates of cells. For cells without spatial information (i.e., test set), use zeros.
-  - **Section Information** (`region`): This column should specify the regions cells are sourced from, helping differentiate between training and testing slices.
+  - **Section Information** (`cell_section`): This column should specify the section cells are sourced from. Cells from the same section (slice) with be grouped as one input sample. 
   - **Gene Expression Matrix**: Include a preprocessed cell-by-gene matrix, preferably normalized using log2 transformation.
-  - **Cell Annotation** (`class`): Use this to categorize cells, aiding in the evaluation and visualization of generated results.
+  - **Cell Annotation** (`cell_class`): Use this to categorize cells, aiding in the evaluation and visualization of generated results.
 
 ### Installation Requirements
 
@@ -57,23 +57,14 @@ pip install scanpy wandb colorcet squidpy hydra-core linear_attention_transforme
 
 To use LUNA, begin by adjusting the settings in the configuration file located at `/configs/experiment`. This file, which leverages [Hydra](https://hydra.cc/docs/intro/) for managing configurations, contains essential parameters like the experiment name, dataset paths, and training/testing splits. Run the `main.py` file to start the experiment. Here is a breakdown of the critical elements in the configuration file:
 
-#### General 
-- `mode`: Defines the mode to run the model. Options include:
-  - `'train_and_test'`: Train the model and then automatically run tests.
-  - `'test_only'`: Skip training and load checkpoints for testing only.
-
-#### Dataset Configuration
+#### Dataset
 - `dataset_name`: Specifies the name of the dataset you are utilizing.
-- `data_path`: Provides the path to your dataset’s `.csv` file.
-- `gene_columns_start` and `gene_columns_end`: Define the columns where gene expression data begins and ends within your dataset.
-- `train_regions` and `test_regions`: Designate specific regions of the dataset to be used for training and testing, respectively.
+- `data_path_train`: Provides the path to your train dataset’s `.csv` file.
+- `data_path_inference`: Provides the path to your inference dataset’s `.csv` file.
+- `gene_columns_start` and `gene_columns_end`: Define the columns where gene expression data begins and ends within your dataset (train dataset and inference dataset should have the same number of genes and gene columns should be ordered the same).
 
 #### Test
-- `save_dir`: Directory to save test results. Use `'./'` to save in the current directory, or set it to `'null'` to save in `checkpoints_parent_dir`.
-- `checkpoints_parent_dir`: Directory path containing the checkpoints. This setting is only used in `'test_only'` mode. If running `'train_and_test'`, set this to `'null'`.
-- `checkpoints_name_list`: A list of checkpoints to test:
-  - Use `'all'` to test every checkpoint in the `checkpoints_parent_dir`.
-  - Specify individual checkpoints, e.g., `['epoch=749.ckpt']`, if you only want to test specific models.
+- `save_dir`: Directory to save test results. Use `'./'` to save in the current codebase directory.
 
 Once your configuration is ready, execute the script. Simply change the `experiment` value in `/configs/config.yaml` to point to your updated configuration file, and LUNA will be ready to run by
 

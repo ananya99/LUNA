@@ -93,9 +93,9 @@ def plot_scatter_visualization(metadata_true, metadata_pred, uniques, dir):
     axarr[0].set_title("Groundtruth", fontsize=16)  # Adjust title font size
     g1 = sns.scatterplot(
         data=metadata_true,
-        x="x",
-        y="y",
-        hue="c",
+        x="coord_X",
+        y="coord_Y",
+        hue="cell_class",
         s=15,
         ax=axarr[0],
         palette=palette_dict,
@@ -108,9 +108,9 @@ def plot_scatter_visualization(metadata_true, metadata_pred, uniques, dir):
     axarr[1].set_title("Prediction", fontsize=16)  # Adjust title font size
     g2 = sns.scatterplot(
         data=metadata_pred,
-        x="x",
-        y="y",
-        hue="c",
+        x="coord_X",
+        y="coord_Y",
+        hue="cell_class",
         s=15,
         ax=axarr[1],
         palette=palette_dict,

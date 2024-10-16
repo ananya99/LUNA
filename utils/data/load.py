@@ -21,10 +21,10 @@ def create_anndata(
     sc.AnnData: The created AnnData object.
     """
     true_points = np.column_stack(
-        (metadata_true["x"].values, metadata_true["y"].values)
+        (metadata_true["coord_X"].values, metadata_true["coord_Y"].values)
     )
     pred_points = np.column_stack(
-        (metadata_pred["x"].values, metadata_pred["y"].values)
+        (metadata_pred["coord_X"].values, metadata_pred["coord_Y"].values)
     )
 
     adata = sc.AnnData(X=pred_points)
@@ -54,6 +54,30 @@ def clean_data(data: np.array) -> np.array:
 
     return data
 
+def standardise_dataframe_colnames(raw_data):
+    """
+    Standardizes column names in the DataFrame according to the dataset name.
+
+    This function renames columns in the provided DataFrame based on the dataset name.
+    For example, for the 'merfish' dataset, it renames certain columns to standard names
+    like 'x', 'y', and 'c'.
+
+    Args:
+        dataset_name (str): Name of the dataset.
+        raw_data (pd.DataFrame): The raw data DataFrame with original column names.
+
+    Returns:
+        pd.DataFrame: The DataFrame with standardized column names.
+    """
+    raw_data = raw_data.rename(
+        columns={
+            "x": "coord_X", # x coordinate
+            "y": "coord_Y", # y coordinate
+            "subclass": "cell_class", # cell class
+            "region": "cell_section", # cell section
+        }
+    )
+    return raw_data
 
 def character_to_int(input: pd.DataFrame, uniques: list) -> tuple[list, dict]:
     """
@@ -85,31 +109,6 @@ def character_to_int(input: pd.DataFrame, uniques: list) -> tuple[list, dict]:
 
     return cell_class_integer, int_to_class
 
-
-def standardise_dataframe_colnames(dataset_cfg, raw_data):
-    """
-    Standardizes column names in the DataFrame according to the dataset name.
-
-    This function renames columns in the provided DataFrame based on the dataset name.
-    For example, for the 'merfish' dataset, it renames certain columns to standard names
-    like 'x', 'y', and 'c'.
-
-    Args:
-        dataset_name (str): Name of the dataset.
-        raw_data (pd.DataFrame): The raw data DataFrame with original column names.
-
-    Returns:
-        pd.DataFrame: The DataFrame with standardized column names.
-    """
-    raw_data = raw_data.rename(
-        columns={
-            dataset_cfg.coordinate_X_column_name: "x",
-            dataset_cfg.coordinate_Y_column_name: "y",
-            dataset_cfg.cell_type_column_name: "c",
-            dataset_cfg.section_column_name: "regions",
-        }
-    )
-    return raw_data
 
 
 def log2_norm(gene_names: list, raw_data: pd.DataFrame) -> pd.DataFrame:
@@ -151,9 +150,9 @@ def position_normalize(input_data: pd.DataFrame) -> pd.DataFrame:
         np.ndarray: The normalized positions.
     """
 
-    for key in ["x", "y"]:
-        if "regions" in input_data.columns:
-            groups = input_data.groupby("regions")[key]
+    for key in ["coord_X", "coord_Y"]:
+        if "cell_section" in input_data.columns:
+            groups = input_data.groupby("cell_section")[key]
             min_, max_ = groups.transform("min"), groups.transform("max")
         else:
             min_, max_ = input_data[key].min(), input_data[key].max()
@@ -179,9 +178,9 @@ def to_dataframe(cell_class: list, position: np.ndarray, index=None) -> pd.DataF
         index = range(len(cell_class))
     metadata = pd.DataFrame(
         data={
-            "c": cell_class,
-            "x": position[:, 0],
-            "y": position[:, 1],
+            "cell_class": cell_class,
+            "coord_X": position[:, 0],
+            "coord_Y": position[:, 1],
         },
         index=index,
     )
@@ -284,7 +283,7 @@ def compute_distance(metadata: pd.DataFrame) -> np.ndarray:
         np.ndarray: A 2D array representing the pairwise distance matrix of the points.
     """
     # Convert metadata to numpy array of positions
-    pos = np.array([metadata["x"], metadata["y"]])
+    pos = np.array([metadata["coord_X"], metadata["coord_Y"]])
 
     # Compute and return the pairwise distance matrix
     return cdist(pos.T, pos.T)
