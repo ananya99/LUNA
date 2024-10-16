@@ -44,7 +44,8 @@ conda activate LUNA
 
 Install cuda, pytorch, torch-geometric, lightning and other pip libraries: 
 ```bash
-conda install nvidia/label/cuda-11.8.0::cuda-toolkitpip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cu118
+conda install nvidia/label/cuda-11.8.0::cuda-toolkit
+pip install torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cu118
 pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.0.0+cu118.html
 pip install torch_geometric
 pip install lightning
