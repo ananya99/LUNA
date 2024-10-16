@@ -62,8 +62,8 @@ To use LUNA, begin by adjusting the settings in the configuration file located a
 
 #### Dataset
 - `dataset_name`: Specifies the name of the dataset you are utilizing.
-- `data_path_train`: Provides the path to your train dataset’s `.csv` file.
-- `data_path_inference`: Provides the path to your inference dataset’s `.csv` file.
+- `train_data_path`: Provides the path to your train dataset’s `.csv` file.
+- `test_data_path`: Provides the path to your inference dataset’s `.csv` file.
 - `gene_columns_start` and `gene_columns_end`: Define the columns where gene expression data begins and ends within your dataset (train dataset and inference dataset should have the same number of genes and gene columns should be ordered the same).
 
 #### Test
