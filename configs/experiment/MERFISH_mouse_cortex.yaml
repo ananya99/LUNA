@@ -4,7 +4,7 @@ general:
     mode : 'train_and_test' # mode of the experiment, train_and_test, test_only
 
 distribute:
-    gpus_per_node: [1] # Index of GPUs for training (assume one node per machine)
+    gpus_per_node: [0] # Index of GPUs for training (assume one node per machine)
 
 dataset:
     dataset_name: 'merfish_mouse_cortex' # name of the dataset
