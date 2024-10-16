@@ -25,7 +25,7 @@ def main(cfg: DictConfig):
     )
 
     # Set up the dataset
-    datamodule, dataset_infos = setup_dataset(cfg, load_from_disk=False)
+    datamodule, dataset_infos = setup_dataset(cfg)
 
     # Run training or testing based on mode
     if cfg.general.mode == "train_and_test":

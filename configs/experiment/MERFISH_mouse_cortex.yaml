@@ -1,11 +1,6 @@
 # @package _global_
 general:
     name : 'MERFISH_mouse_cortex' # name of the experiment
-    wandb: 'online' # run, disabled, online, dryrun or offline
-    mode: 'train_and_test' # 'train_and_test', 'test_only'
-    seed: 0 # random seed
-    enable_progress_bar: True # Enable progress bar for training and validation
-    local_saved_path: null # path to save the experiment results. 'null' to save to the default path.
 
 distribute:
     gpus_per_node: 1 # Number of GPUs for each node (assume one node per machine)
@@ -15,50 +10,17 @@ dataset:
     gene_columns_start: 0
     gene_columns_end: 254
     train_data_path: '/mlbio_scratch/data/tiyu/mouse_cortex_merfish/merfish_mouse_cortex.csv' # path to the training dataset
-    validation_data_path: null # path to the validation dataset (optional)
     test_data_path: '/mlbio_scratch/data/tiyu/mouse_cortex_merfish/merfish_mouse_cortex.csv' # path to the test dataset
+    validation_data_path: null # path to the validation dataset
 
 train:
     n_epochs: 3000 # Number of epochs
-    batch_size: 1 # Batch size for training
-    lr: 5e-4 # Learning rate
-    weight_decay: 1.0e-12 # Weight decay
-    fast_dev_run: false # Fast development run. If True, only 1 batch is processed.
+    batch_size: 1 # Batch size for training, increase according to the GPU memory
+    lr: 5e-4 # Learning rate, we recommend 1e-4 or 5e-4 for most of the datasets
 
 test:
-    checkpoints_parent_dir: null # only for 'test_only' mode, path to the checkpoint to test. 
-    checkpoints_name_list: all # only for 'test_only' mode, list of checkpoint paths to test. 'all' to test all checkpoints in the checkpoints_parent_dir., 'epoch=749.ckpt'
-    save_dir: './' # only for 'test_only' mode, path to save the test results. 'null' to save to checkpoints_parent_dir.
-    batch_size: 1 # Batch size for testing
-    epoch_index: null
-    checkpoint_path: null # only for 'test_only' mode, path to the checkpoint to test.
-    test_save_parent_path: null # only for 'test_only' mode, path to save the test results. 'null' to save to checkpoints_parent_dir.
+    save_dir: './' # Path to save the inference results.
 
 validation:
-    if_validate: False # If True, enable validation
-    batch_size: 8 # Batch size for validation
-    save_model: True
-    check_val_every_n_epochs: 1 # The frequency of running model validation. 0 to disable.
-    check_val_monitor: "val_loss/absolute_rssd" # The metric to monitor for model validation.
-    save_top_k_models: 40 # The number of top models to save. 0 to disable.
-    early_stopping: True # Enable early stopping
-    early_stopping_patience: 100 # The number of epochs with no improvement after which training will be stopped.
-
-model:
-    n_layers: 8 # Number of transformer layers
-    diffusion_noise_schedule: cosine # noise schedule for diffusion time
-    diffusion_steps: 1000 # number of diffusion steps
-    nu:
-      p: 2
-    hidden_mlp_dims:
-      X: 256 # hidden dimension of the MLP for cellular features
-      y: 256 # hidden dimension of the MLP for diffusion time
-      pos: 64 # hidden dimension of the MLP for position
-    hidden_dims:
-      dx: 256 # hidden dimension of the MLP for cellular features
-      dy: 1 # hidden dimension of the MLP for diffusion time
-      num_heads: 16 # number of heads in the multi-head attention
-      dim_ffX: 256 # hidden dimension of the cellular features feedforward network in the transformer
-      dim_ffy: 256 # hidden dimension of the diffusion time feedforward network in the transformer
-      dd: 64 # hidden dimension of the MLP for positions
-      output_features_to_pos_dims: 4 # hidden dimension of the MLP for the output features to positions
+    if_validate: False # If True, enable validation. Set the path to the validation dataset in the dataset section.
+    save_model_every_n_epochs: 50 # For the case that if_validate is false, save models. The frequency of saving model. 0 to disable.

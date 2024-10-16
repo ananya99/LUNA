@@ -1,8 +1,6 @@
-import glob
+
 import os
 import pathlib
-import pickle
-
 import omegaconf
 import wandb
 from pytorch_lightning import Trainer
@@ -16,7 +14,6 @@ from datasets.data_module import DataModule, Infos
 from diffusion_model import FullDenoisingDiffusion
 from utils.data.abstract_datatype import AbstractDataModule, AbstractDatasetInfos
 from utils.data.misc import setup_wandb
-
 
 def get_resume(
     cfg: omegaconf.DictConfig,
@@ -43,12 +40,66 @@ def get_resume(
     # Return the updated configuration and the loaded model
     return cfg, model
 
+def create_model_checkpoint_callbacks(cfg: omegaconf.DictConfig) -> list:
+    """Create model checkpoint callbacks based on configuration."""
+    
+    callbacks = []
+    
+    if cfg.validation.if_validate:
+        # Validation enabled: use specific validation settings
+        save_top_k = cfg.validation.save_top_k_models
+        monitor_metric = cfg.validation.check_val_monitor
+        check_every_n_epochs = cfg.validation.check_val_every_n_epochs
+        
+
+        callbacks.append(
+            ModelCheckpoint(
+                dirpath="checkpoints",
+                filename="{epoch}",
+                monitor=monitor_metric,
+                save_top_k=save_top_k,
+                mode="min",
+                every_n_epochs=check_every_n_epochs,
+            )
+        )
+        callbacks.append(
+            ModelCheckpoint(
+                dirpath="checkpoints", filename="last_epoch", every_n_epochs=1
+            )
+        )
+    else:
+        print("[INFO]: Validation is disabled.")
+        # Validation disabled: save model at a defined interval
+        save_top_k = cfg.validation.save_top_k_models
+        save_model_every_n_epochs = cfg.validation.save_model_every_n_epochs
+        # Validation disabled: save model at a defined interval
+        callbacks.append(
+            ModelCheckpoint(
+                dirpath="checkpoints", 
+                filename="{epoch}",
+                save_top_k=-1,     
+                save_on_train_epoch_end=True,
+                every_n_epochs=save_model_every_n_epochs  # Save model every m epochs, or set as needed
+            )
+        )
+    
+    return callbacks
+
+
+def create_early_stopping_callback(cfg: omegaconf.DictConfig, monitor_metric: str) -> EarlyStopping:
+    """Create an early stopping callback based on configuration."""
+    
+    if cfg.validation.if_validate and cfg.validation.early_stopping:
+        return EarlyStopping(
+            monitor=monitor_metric,
+            patience=cfg.validation.early_stopping_patience,
+            mode="min",
+        )
+    else:
+        return None  # No early stopping when validation is disabled
 
 def setup_dataset(
     cfg: omegaconf.DictConfig,
-    dataset_path: pathlib.Path = None,
-    dataset_infos_path: pathlib.Path = None,
-    load_from_disk: bool = False,
 ) -> tuple:
     """Set up the dataset based on the configuration provided."""
     datamodule = DataModule(cfg)
@@ -83,97 +134,36 @@ def setup_model(
     return model
 
 
-def create_model_checkpoint_callbacks(cfg: omegaconf.DictConfig) -> list:
-    """Create model checkpoint callbacks based on configuration."""
-    save_model = (
-        cfg.validation.save_model if cfg.validation.save_model is not None else True
-    )
-    save_top_k = (
-        cfg.validation.save_top_k_models
-        if cfg.validation.save_top_k_models is not None
-        else 20
-    )
-    monitor_metric = (
-        cfg.validation.check_val_monitor
-        if cfg.validation.check_val_monitor
-        else "val_loss/position_mse"
-    )
-    check_every_n_epochs = (
-        cfg.validation.check_val_every_n_epochs
-        if cfg.validation.check_val_every_n_epochs is not None
-        else 20
-    )
+def setup_callbacks(cfg: omegaconf.DictConfig, datamodule: AbstractDataModule) -> list:
+    """Set up training callbacks based on the configuration."""
+    callbacks = create_model_checkpoint_callbacks(cfg)
+    
+    lr_monitor = create_lr_monitor_callback()
+    callbacks.append(lr_monitor)
 
-    callbacks = []
-    if save_model:
-        callbacks.append(
-            ModelCheckpoint(
-                dirpath="checkpoints",
-                filename="{epoch}",
-                monitor=monitor_metric,
-                save_top_k=save_top_k,
-                mode="min",
-                every_n_epochs=check_every_n_epochs,
-            )
-        )
-        callbacks.append(
-            ModelCheckpoint(
-                dirpath="checkpoints", filename="last_epoch", every_n_epochs=1
-            )
-        )
+    if cfg.validation.if_validate and cfg.validation.early_stopping:
+        monitor_metric = cfg.validation.check_val_monitor
+        early_stopping = create_early_stopping_callback(cfg, monitor_metric)
+        if early_stopping:
+            callbacks.append(early_stopping)
 
     return callbacks
-
 
 def create_lr_monitor_callback() -> LearningRateMonitor:
     """Create a learning rate monitor callback."""
     return LearningRateMonitor(logging_interval="epoch")
 
 
-def create_early_stopping_callback(
-    cfg: omegaconf.DictConfig, monitor_metric: str
-) -> EarlyStopping:
-    """Create an early stopping callback based on configuration."""
-    return EarlyStopping(
-        monitor=monitor_metric,
-        patience=cfg.validation.early_stopping_patience,
-        mode="min",
-    )
-
-
-def setup_callbacks(cfg: omegaconf.DictConfig, datamodule: AbstractDataModule) -> list:
-    """Set up training callbacks based on the configuration."""
-    callbacks = create_model_checkpoint_callbacks(cfg)
-    callbacks.append(create_lr_monitor_callback())
-
-    if cfg.validation.early_stopping:
-        monitor_metric = (
-            cfg.validation.check_val_monitor
-            if cfg.validation.check_val_monitor
-            else "val_loss/position_mse"
-        )
-        callbacks.append(create_early_stopping_callback(cfg, monitor_metric))
-
-    return callbacks
-
-
 def setup_trainer(cfg: omegaconf.DictConfig, callbacks: list) -> Trainer:
     """Set up the PyTorch Lightning Trainer based on the configuration and callbacks."""
-    fast_dev_run = (
-        cfg.train.fast_dev_run if cfg.train.fast_dev_run is not None else False
-    )
+    
+    fast_dev_run = cfg.train.fast_dev_run
     if fast_dev_run:
         print("[WARNING]: The model will run with fast_dev_run.")
 
-    gpus = (
-        cfg.distribute.gpus_per_node if cfg.distribute.gpus_per_node is not None else 1
-    )
-    max_epochs = cfg.train.n_epochs if cfg.train.n_epochs is not None else 5000
-    check_val_every_n_epochs = (
-        cfg.validation.check_val_every_n_epochs
-        if cfg.validation.check_val_every_n_epochs is not None
-        else 0
-    )
+    gpus = cfg.distribute.gpus_per_node
+    max_epochs = cfg.train.n_epochs
+    check_val_every_n_epochs = 0 if not cfg.validation.if_validate else cfg.validation.check_val_every_n_epochs
 
     local_rank = int(os.environ.get("LOCAL_RANK", 0))
     if wandb.run and local_rank == 0:
@@ -188,3 +178,4 @@ def setup_trainer(cfg: omegaconf.DictConfig, callbacks: list) -> Trainer:
         log_every_n_steps=50 if fast_dev_run else 1,
         enable_progress_bar=cfg.general.enable_progress_bar,
     )
+
