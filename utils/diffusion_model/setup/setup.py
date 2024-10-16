@@ -46,6 +46,7 @@ def create_model_checkpoint_callbacks(cfg: omegaconf.DictConfig) -> list:
     callbacks = []
     
     if cfg.validation.if_validate:
+        assert cfg.dataset.validation_data_path is not None, "Validation data path is not provided."
         # Validation enabled: use specific validation settings
         save_top_k = cfg.validation.save_top_k_models
         monitor_metric = cfg.validation.check_val_monitor

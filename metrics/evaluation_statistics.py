@@ -43,6 +43,7 @@ def compute_kabsch_rotation(
         rot, rssd, sens = R.align_vectors(
             metadata_true, metadata_pred, return_sensitivity=True
         )
+        
     except np.linalg.LinAlgError:
         print("SVD did not converge.")
         return +np.inf, +np.inf, +np.inf
@@ -190,11 +191,11 @@ def compute_RSSD(
         rot, absolute_rssd, _ = compute_kabsch_algorithm(
             metadata_true_dict[i], metadata_pred_dict[i]
         )
-        classes = set(metadata_true_dict[i]["c"])
+        classes = set(metadata_true_dict[i]["cell_class"])
 
         for c in classes:
-            metadata_true_c = metadata_true_dict[i][metadata_true_dict[i]["c"] == c]
-            metadata_pred_c = metadata_pred_dict[i][metadata_pred_dict[i]["c"] == c]
+            metadata_true_c = metadata_true_dict[i][metadata_true_dict[i]["cell_class"] == c]
+            metadata_pred_c = metadata_pred_dict[i][metadata_pred_dict[i]["cell_class"] == c]
             _, rssd, _ = compute_kabsch_algorithm(metadata_true_c, metadata_pred_c)
             classes_rsd.append(rssd)
             num_cells_per_class.append(len(metadata_true_c))
