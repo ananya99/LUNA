@@ -176,6 +176,7 @@ def setup_trainer(cfg: omegaconf.DictConfig, callbacks: list) -> Trainer:
         check_val_every_n_epoch=check_val_every_n_epochs,
         fast_dev_run=fast_dev_run,
         callbacks=callbacks,
+        strategy='ddp_find_unused_parameters_true',
         log_every_n_steps=50 if fast_dev_run else 1,
         enable_progress_bar=cfg.general.enable_progress_bar,
     )

@@ -15,7 +15,7 @@ dataset:
     validation_data_path: null # path to the validation dataset
 
 train:
-    n_epochs: 3000 # Number of epochs
+    n_epochs: 1000 # Number of epochs
     batch_size: 6 # Batch size for training, increase according to the GPU memory
     lr: 5e-4 # Learning rate, we recommend 1e-4 or 5e-4 for most of the datasets
 
@@ -24,4 +24,4 @@ test:
 
 validation:
     if_validate: False # If True, enable validation. Set the path to the validation dataset in the dataset section.
-    save_model_every_n_epochs: 50 # For the case that if_validate is false, save models. The frequency of saving model. 0 to disable.
+    save_model_every_n_epochs: 250 # For the case that if_validate is false, save models. The frequency of saving model. 0 to disable.

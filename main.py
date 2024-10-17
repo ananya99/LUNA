@@ -115,7 +115,6 @@ def load_model_config(cfg: DictConfig, checkpoint_path: str):
     config_file = "/".join(checkpoint_path.split("/")[:-2])
     loading_model_cfg = safe_load(open(f"{config_file}/.hydra/config.yaml"))
     cfg["model"] = loading_model_cfg["model"]
-    cfg["experiment"] = loading_model_cfg["experiment"]
 
 
 if __name__ == "__main__":

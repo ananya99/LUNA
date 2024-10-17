@@ -201,7 +201,7 @@ def prepare_data(positions_pred, positions_true, cell_ID, cell_class, dir_path):
 
     save_dataframes(metadata_true, metadata_pred, dir_path)
 
-    unique_cell_classes = metadata_true["c"].unique()
+    unique_cell_classes = metadata_true["cell_class"].unique()
     unique_cell_classes.sort()
 
     return metadata_true, metadata_pred, unique_cell_classes
