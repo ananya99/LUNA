@@ -4,6 +4,8 @@
 
 **LUNA** is a generative diffusion model that predicts spatial locations of cells from their gene expression profiles enabling de novo reconstruction of cell locations. During training, LUNA learns spatial priors over existing spatial transcriptomics data. At inference stage, LUNA generates complex tissue structures solely from gene expressions of dissociated cells. LUNA is written in PyTorch.
 
+[Project website](http://brbiclab.epfl.ch/projects/luna)
+
 <p align="center">
 <img src="https://github.com/mlbio-epfl/LUNA/blob/main/image/LUNA_Framework.png" width="1100" align="center">
 </p>
@@ -79,15 +81,19 @@ python main.py
 
 ### Example Usage
 
-We provide a sample dataset from the [MERFISH Mouse Primary Motor Cortex Atlas](https://drive.google.com/file/d/1YP1s_dERAUh7vXUjMRSvuFJllGBX8tYr/view?usp=drive_link) [1]. To use this dataset with LUNA, download it to your local machine, you can either follow the instruction in `/example/MERFISH_mouse_cortex.ipynb` file OR simply update the `data_path` in the configuration file to reflect this dataset's location, and execute `main.py` to run LUNA on this dataset.
+We provide a sample dataset from the [MERFISH Mouse Primary Motor Cortex Atlas](https://drive.google.com/file/d/1YP1s_dERAUh7vXUjMRSvuFJllGBX8tYr/view?usp=drive_link). To use this dataset with LUNA, download it to your local machine, you can either follow the instruction in `/example/MERFISH_mouse_cortex.ipynb` file OR simply update the `data_path` in the configuration file to reflect this dataset's location, and execute `main.py` to run LUNA on this dataset.
 
-## Contact
+## Citing
 
-If you have questions, please contact the authors of the method:
-- Yist YU - <tingyang.yu@epfl.ch>  
-- Maria Brbic - <mbrbic@epfl.ch>
+If you find LUNA useful, please consider citing:
 
-## Reference
-[1] Zhang, Meng, et al. "Spatially Resolved Cell Atlas of the Mouse Primary Motor Cortex by MERFISH." Nature 598.7879 (2021): 137-143.
+```
+@article{yu2024luna,
+  title={Generating complex tissue structures from gene expressions with LUNA},
+  author={Yu, Tingyang and Ekbote, Chanakya and Morozov, Nikita and D'Ascoli, Stephane and Fan, 
+          Jiashuo and Frossard, Pascal and Brbic, Maria},
+  journal={biorxiv},
+  year={2024},
+}
 
 
