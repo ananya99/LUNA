@@ -2,7 +2,7 @@
 <img src="https://github.com/mlbio-epfl/LUNA/blob/main/image/LUNA.png" width="400" align="center">
 </p>
 
-**LUNA** is a generative diffusion model that predicts spatial locations of cells from their gene expression profiles enabling de novo reconstruction of cell locations. During training, LUNA learns spatial priors over existing spatial transcriptomics data. At inference stage, LUNA generates complex tissue structures solely from gene expressions of dissociated cells. LUNA is written in Pytorch.
+**LUNA** is a generative diffusion model that predicts spatial locations of cells from their gene expression profiles enabling de novo reconstruction of cell locations. During training, LUNA learns spatial priors over existing spatial transcriptomics data. At inference stage, LUNA generates complex tissue structures solely from gene expressions of dissociated cells. LUNA is written in PyTorch.
 
 <p align="center">
 <img src="https://github.com/mlbio-epfl/LUNA/blob/main/image/LUNA_Framework.png" width="1100" align="center">
@@ -11,6 +11,7 @@
 Input:
 - A **gene expression matrix** along with the corresponding **cell coordinates** from spatial transcriptomics data, accompanied by section information. The files should be in `.csv` format, and is used for model training.
 - A **gene expression matrix** for single cells lacking spatial information, accompanied ideally by cell class annotations (for visualization purpose). This matrix should contain the same number of genes as the training dataset. The files should be in `.csv` format, and is used for model inference.
+
 **Note:** The two matrices should be derived from the same anatomical region or tissue type and share a common set of genes. 
 
 Output:
