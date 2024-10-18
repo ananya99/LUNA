@@ -95,5 +95,3 @@ If you find LUNA useful, please consider citing:
   journal={biorxiv},
   year={2024},
 }
-
-
