@@ -8,13 +8,13 @@
 <img src="https://github.com/mlbio-epfl/LUNA/blob/main/image/LUNA_Framework.png" width="1100" align="center">
 </p>
 
-Input:
+**Input:**
 - A **gene expression matrix** along with the corresponding **cell coordinates** from spatial transcriptomics data, accompanied by section information. The files should be in `.csv` format, and is used for model training.
 - A **gene expression matrix** for single cells lacking spatial information, accompanied ideally by cell class annotations (for visualization purpose). This matrix should contain the same number of genes as the training dataset. The files should be in `.csv` format, and is used for model inference.
 
-**Note:** The two matrices should be derived from the same anatomical region or tissue type and share a common set of genes. 
+Note: The two matrices should be derived from the same anatomical region or tissue type and share a common set of genes. 
 
-Output:
+**Output:**
 - The generated **2D spatial coordinates** of cells, based on their gene expression data, provided in `.csv` format.
 
 ---
