@@ -2,7 +2,7 @@
 <img src="https://github.com/mlbio-epfl/LUNA/blob/main/image/LUNA.png" width="400" align="center">
 </p>
 
-**LUNA** is a generative diffusion model that predicts spatial locations of cells from their gene expression profiles enabling de novo reconstruction of cell locations. During training, LUNA learns spatial priors over existing spatial transcriptomics data. At inference stage, LUNA generates complex tissue structures solely from gene expressions of dissociated cells. LUNA is written in PyTorch.
+**LUNA** is a generative AI model that reconstructs tissues conditioned solely on gene expressions of cells by learning spatial priors over existing spatially resolved datasets. During training, LUNA learns spatial priors over existing spatial transcriptomics data. At inference stage, LUNA generates complex tissue structures solely from gene expressions of dissociated cells. LUNA is written in PyTorch.
 
 [Project website](http://brbiclab.epfl.ch/projects/luna)
 
