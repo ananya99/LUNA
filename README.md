@@ -88,10 +88,10 @@ We provide a sample dataset from the [MERFISH Mouse Primary Motor Cortex Atlas](
 If you find LUNA useful, please consider citing:
 
 ```
-@article{yu2024luna,
-  title={Generating complex tissue structures from gene expressions with LUNA},
-  author={Yu, Tingyang and Ekbote, Chanakya and Morozov, Nikita and D'Ascoli, Stephane and Fan, 
-          Jiashuo and Frossard, Pascal and Brbic, Maria},
+@article{yu2025luna,
+  title={Tissue reassembly with generative AI},
+  author={Yu, Tingyang and Ekbote, Chanakya and Morozov, Nikita and Fan, 
+          Jiashuo and Frossard, Pascal and D'Ascoli, Stephane and Brbic, Maria},
   journal={biorxiv},
-  year={2024},
+  year={2025},
 }
