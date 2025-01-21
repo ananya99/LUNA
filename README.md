@@ -83,6 +83,10 @@ python main.py
 
 We provide a sample dataset from the [MERFISH Mouse Primary Motor Cortex Atlas](https://drive.google.com/file/d/1-Xn8uq5RAa5_CE6Yh4gx9-0cfvhVWrnu/view?usp=drive_link). To use this dataset with LUNA, download it to your local machine, you can either follow the instruction in `/example/MERFISH_mouse_cortex.ipynb` file OR simply update the `data_path` in the configuration file to reflect this dataset's location, and execute `main.py` to run LUNA on this dataset.
 
+### Data Availability 
+
+The preprocessed datasets used for the experiments presented in our manuscript are available for access [here](https://drive.google.com/drive/folders/1vWxVUSuQzRDF1o9Vw_cnm-wbEYw_e1Gu?usp=sharing).
+
 ## Citing
 
 If you find LUNA useful, please consider citing:
