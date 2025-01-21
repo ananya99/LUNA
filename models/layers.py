@@ -65,13 +65,12 @@ class PositionsMLP(nn.Module):
         return new_pos
 
 
-class SE3Norm(nn.Module):
+class PositionNorm(nn.Module):
     def __init__(self, eps: float = 1e-5, device=None, dtype=None) -> None:
         """
-        Initializes a SE3Norm layer.
+        Initializes a PositionNorm layer.
 
-        This layer performs normalization on input positions in SE(3) space, i.e., spatial
-        coordinates extended with rotation. It scales positions based on the mean norm of active
+        This layer performs normalization on input positions. It scales positions based on the mean norm of active
         nodes, allowing for a normalized representation.
 
         Parameters:
@@ -94,7 +93,7 @@ class SE3Norm(nn.Module):
 
     def forward(self, pos: torch.Tensor, node_mask: torch.Tensor) -> torch.Tensor:
         """
-        Performs a forward pass through the SE3Norm layer.
+        Performs a forward pass through the PositionNorm layer.
 
         Parameters:
         - pos (torch.Tensor): Input tensor representing positions.

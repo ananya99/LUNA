@@ -4,7 +4,7 @@ from torch.nn.modules.dropout import Dropout
 from torch.nn.modules.linear import Linear
 from torch.nn.modules.normalization import LayerNorm
 
-from models.layers import SE3Norm
+from models.layers import PositionNorm
 from models.self_attention import SelfAttention
 from utils.data.dataholder import DataHolder
 
@@ -81,7 +81,7 @@ class TransformerLayer(nn.Module):
         self.dropout_node_features_2 = Dropout(dropout)
         self.dropout_node_features_3 = Dropout(dropout)
 
-        self.norm_positions_1 = SE3Norm(eps=1e-8, **kw)
+        self.norm_positions_1 = PositionNorm(eps=1e-8, **kw)
 
         self.last_layer = last_layer
 
