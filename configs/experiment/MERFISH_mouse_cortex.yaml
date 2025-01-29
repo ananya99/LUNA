@@ -4,14 +4,14 @@ general:
     mode : 'train_and_test' # mode of the experiment, train_and_test, test_only
 
 distribute:
-    gpus_per_node: [0] # Index of GPUs for training (assume one node per machine)
+    gpus_per_node: [1] # Index of GPUs for training (assume one node per machine)
 
 dataset:
     dataset_name: 'merfish_mouse_cortex' # name of the dataset
     gene_columns_start: 0
     gene_columns_end: 254
-    train_data_path: /data/MERFISH_mouse_cortex/MERFISH_mouse_cortex_train.csv # path to the training dataset
-    test_data_path: /data/MERFISH_mouse_cortex/MERFISH_mouse_cortex_test.csv # path to the test dataset
+    train_data_path: /mlbio_scratch/yistyu/luna-codebase-online/LUNA/mouse_cortex_merfish_data/merfish_mouse_cortex_train.csv # path to the training dataset
+    test_data_path: /mlbio_scratch/yistyu/luna-codebase-online/LUNA/mouse_cortex_merfish_data/merfish_mouse_cortex_test.csv # path to the test dataset
     validation_data_path: null # path to the validation dataset
 
 train:
@@ -21,6 +21,8 @@ train:
 
 test:
     save_dir: './' # Path to save the inference results.
+    checkpoints_parent_dir: /cs/labs/mornitzan/ricci/projects/outputs/2025-01-27/02-33-36-MERFISH_mouse_cortex/
+    checkpoint_name: ['epoch=999.ckpt'] # Name of the checkpoint to be used for testing
 
 validation:
     if_validate: False # If True, enable validation. Set the path to the validation dataset in the dataset section.
