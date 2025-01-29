@@ -83,6 +83,8 @@ python main.py
 
 We provide a sample dataset from the [MERFISH Mouse Primary Motor Cortex Atlas](https://drive.google.com/file/d/1-Xn8uq5RAa5_CE6Yh4gx9-0cfvhVWrnu/view?usp=drive_link). To use this dataset with LUNA, download it to your local machine, you can either follow the instruction in `/example/MERFISH_mouse_cortex.ipynb` file OR simply update the `data_path` in the configuration file to reflect this dataset's location, and execute `main.py` to run LUNA on this dataset.
 
+We also offer a detailed tutorial on using the `test_only` mode to load checkpoints from your trained LUNA model and conduct tests. You can find the step-by-step instructions in the notebook located at `/example/MERFISH_mouse_cortex_test_only.ipynb`.
+
 ### Data Availability 
 
 The preprocessed datasets used for the experiments presented in our manuscript are available for access [here](https://drive.google.com/drive/folders/1vWxVUSuQzRDF1o9Vw_cnm-wbEYw_e1Gu?usp=sharing).
@@ -103,7 +105,10 @@ If you find LUNA useful, please consider citing:
 
 ## Troubleshooting
 
-If you encounter the following error while computing the RSSD metric:
+1. If you are not familiar with [Weights & Biases](https://wandb.ai/) (wandb) and wish to disable it during the model training, especially if you encounter error messages while using wandb, you can easily do so. Simply add the flag `general.wandb=disabled` to your command to disable wandb integration.
+
+
+2. If you encounter the following error while computing the RSSD metric:
 
 ```bash
 File "/luna/metrics/evaluation_statistics.py", line 43, in compute_kabsch_rotation
