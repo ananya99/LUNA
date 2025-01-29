@@ -99,3 +99,18 @@ If you find LUNA useful, please consider citing:
   journal={biorxiv},
   year={2025},
 }
+```
+
+## Troubleshooting
+
+If you encounter the following error while computing the RSSD metric:
+
+```bash
+File "/luna/metrics/evaluation_statistics.py", line 43, in compute_kabsch_rotation
+    rot, rssd, sens = R.align_vectors(
+  File "_rotation.pyx", line 3420, in scipy.spatial.transform._rotation.Rotation.align_vectors
+scipy.spatial.transform._rotation.Rotation.align_vectors
+ValueError: Cannot return sensitivity matrix with an infinite weight or one vector pair
+```
+
+This error is typically associated with an incompatible version of SciPy. We recommend ensuring that you are using SciPy version 1.9.1. This version has been verified to work correctly with our tools, whereas other versions may lead to compatibility issues.
