@@ -81,7 +81,7 @@ python main.py
 
 ### Example Usage
 
-We provide a sample dataset from the [MERFISH Mouse Primary Motor Cortex Atlas](https://drive.google.com/file/d/1-Xn8uq5RAa5_CE6Yh4gx9-0cfvhVWrnu/view?usp=drive_link). To use this dataset with LUNA, download it to your local machine, you can either follow the instruction in `/example/MERFISH_mouse_cortex.ipynb` file OR simply update the `data_path` in the configuration file to reflect this dataset's location, and execute `main.py` to run LUNA on this dataset.
+We provide a sample dataset from the [MERFISH Mouse Primary Motor Cortex Atlas](https://drive.google.com/file/d/1j6W5NZV56_W3kO_UxXEtFv1nIlwUksLi/view?usp=drive_link). To use this dataset with LUNA, download it to your local machine, you can either follow the instruction in `/example/MERFISH_mouse_cortex.ipynb` file OR simply update the `data_path` in the configuration file to reflect this dataset's location, and execute `main.py` to run LUNA on this dataset.
 
 We also offer a detailed tutorial on using the `test_only` mode to load checkpoints from your trained LUNA model and conduct tests. You can find the step-by-step instructions in the notebook located at `/example/MERFISH_mouse_cortex_test_only.ipynb`.
 

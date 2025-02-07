@@ -34,7 +34,9 @@ class Dataset(InMemoryDataset):
         self.name = cfg.dataset.dataset_name
         self.input_data = input_data
         self.num_cell_class = len(input_data["cell_class"].unique())
+        self.maximum_graph_size = cfg.dataset.maximum_graph_size[split]
         self.cfg = cfg
+        
         self._data, self.slices = Data(), {}
 
         # Dataset processing pipeline
@@ -140,10 +142,26 @@ class Dataset(InMemoryDataset):
         current_slice, slice_start, slice_ = slices[0], 0, []
 
         for i in range(1, len(slices)):
+            # Check for slice change or end of slices array
             if slices[i] != current_slice or i == len(slices) - 1:
-                slice_end = i if i != len(slices) - 1 else i + 1
-                slice_.extend([slice_start, slice_end])
-                current_slice, slice_start = slices[i], i
+                # Determine the end of the current slice
+                slice_end = i + 1 if i == len(slices) - 1 else i
+
+                # Apply different logic based on whether maximum_graph_size is set
+                if self.maximum_graph_size is None:
+                    slice_.extend([slice_start, slice_end])
+                else:
+                    # Generate indices with step size of maximum_graph_size
+                    new_indices = np.arange(slice_start, slice_end, self.maximum_graph_size).astype(int)
+                    slice_.extend(new_indices)
+                    slice_.append(slice_end)
+
+                # Update the current slice and start for the next one
+                current_slice, slice_start = slices[i], i      
+
+        print(self.split)
+        print(self.maximum_graph_size)
+        print(np.unique(slice_))
 
         return np.unique(slice_)
 
