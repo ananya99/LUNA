@@ -28,7 +28,7 @@ To effectively train LUNA, organize your input `.csv` files in the following for
 - **Rows** represent **cells**.
 - **Columns** represent **features**, detailed as follows:
   - **2D Coordinates**: Use `'coord_X'` and `'coord_Y'` for spatial coordinates of cells. For cells without spatial information (i.e., test set), use zeros.
-  - **Section Information** (`cell_section`): This column should specify the section cells are sourced from. Cells from the same section (slice) with be grouped as one input sample. 
+  - **Section Information** (`cell_section`): This column should specify the section cells are sourced from. Cells from the same section (slice) with be grouped together. 
   - **Gene Expression Matrix**: Include a preprocessed cell-by-gene matrix, preferably normalized using log2 transformation.
   - **Cell Annotation** (`cell_class`): Use this to categorize cells, aiding in the evaluation and visualization of generated results.
 
