@@ -95,6 +95,10 @@ class Dataset(InMemoryDataset):
         gene_names,
         cell_class_decoder,
     ):
+
+        if not self.input_data.index.is_numeric():
+            self.input_data.index = pd.to_numeric(self.input_data.index, errors='coerce').fillna(0).astype(int)
+        
         cell_ID = torch.tensor(self.input_data.index)
 
         self._data.positions = clean_positions
@@ -226,7 +230,7 @@ class DataModule(AbstractDataModule):
         data = pd.read_csv(f"{data_path}", index_col=0)
         
         # Ensure that the data contains the necessary columns, if not call standardise_dataframe_colnames:
-        data = standardise_dataframe_colnames(data)
+        # data = standardise_dataframe_colnames(data)
         assert all(column in data.columns for column in ['coord_X', 'coord_Y', 'cell_section', 'cell_class'])
         
         return data
