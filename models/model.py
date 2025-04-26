@@ -111,6 +111,15 @@ class Model(nn.Module):
             nn.Linear(hidden_mlp_dims["X"], 1),
         )
 
+        self.encoder = nn.Sequential(
+            nn.Conv2d(3, 64, 4, 2, 1),  # downsample
+            nn.ReLU(),
+            nn.Conv2d(64, 128, 4, 2, 1),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(128*56*56, 512)  # final latent dim
+        )
+
         # MLP for processing output positions
         self.mlp_out_pos = PositionsMLP(hidden_mlp_dims["pos"])
 
@@ -128,6 +137,13 @@ class Model(nn.Module):
         node_features = data.node_features
         diffusion_time = data.diffusion_time
         positions = data.positions
+        cell_images = data.cell_images
+        if cell_images is None:
+            print("Warning: cell_images is None")
+        else:
+            print("cell_images shape:", cell_images.shape)
+            cell_images = self.encoder(cell_images)
+            print("cell_images shape after encoder:", cell_images.shape)
 
         add_diffusion_time_to_out = diffusion_time[
             ..., : self.output_dimensions_diffusion_time
@@ -136,6 +152,7 @@ class Model(nn.Module):
         # Process input features using MLPs
         transformed_features = DataHolder(
             node_features=self.mlp_in_node_features(node_features),
+            cell_images=cell_images,
             diffusion_time=self.mlp_in_diffusion_time(diffusion_time),
             positions=self.mlp_in_position(positions, node_mask),
             node_mask=node_mask,

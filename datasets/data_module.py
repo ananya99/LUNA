@@ -16,6 +16,10 @@ from utils.data.load import (
 )
 from torch.utils.data import DataLoader
 from torch_geometric.data import Batch
+import tarfile
+import os
+from PIL import Image
+from io import BytesIO
 
 
 class Dataset(InMemoryDataset):
@@ -23,6 +27,7 @@ class Dataset(InMemoryDataset):
         self,
         split: int,
         input_data: pd.DataFrame,
+        cell_images = None,
         root: str = None,
         transform: callable = None,
         pre_transform: callable = None,
@@ -33,6 +38,7 @@ class Dataset(InMemoryDataset):
         self.split = split
         self.name = cfg.dataset.dataset_name
         self.input_data = input_data
+        self.cell_images = cell_images
         self.num_cell_class = len(input_data["cell_class"].unique())
         self.maximum_graph_size = cfg.dataset.maximum_graph_size[split]
         self.cfg = cfg
@@ -94,17 +100,21 @@ class Dataset(InMemoryDataset):
         clean_cell_class,
         gene_names,
         cell_class_decoder,
+        cell_images=None,
     ):
 
         if not self.input_data.index.is_numeric():
             self.input_data.index = pd.to_numeric(self.input_data.index, errors='coerce').fillna(0).astype(int)
-        
+
         cell_ID = torch.tensor(self.input_data.index)
 
         self._data.positions = clean_positions
         self._data.node_features = clean_node_features
         self._data.cell_class = clean_cell_class
         self._data.cell_ID = cell_ID
+        self.data.cell_images = torch.tensor(
+            cell_images, dtype=torch.float32
+        ) if cell_images is not None else None
 
         num_cell_to_region_mapping_dict = self._create_region_mapping_dict()
         self.statistics = Statistics(
@@ -174,8 +184,10 @@ class DataModule(AbstractDataModule):
     def __init__(self, cfg):
         train_data = self.data_loading(cfg, 'train')
         test_data = self.data_loading(cfg, 'test')
-        self.train_dataset = self._initialize_dataset("train", train_data, cfg)
-        self.test_dataset = self._initialize_dataset("test", test_data, cfg)
+        train_cell_images = self.cell_images_loading(cfg, 'train')
+        test_cell_images = self.cell_images_loading(cfg, 'test')
+        self.train_dataset = self._initialize_dataset("train", train_data, train_cell_images, cfg)
+        self.test_dataset = self._initialize_dataset("test", test_data, test_cell_images, cfg)
 
         if cfg.dataset.validation_data_path:
             validation_data = self.data_loading(cfg, 'validation')
@@ -187,6 +199,7 @@ class DataModule(AbstractDataModule):
             "train": self.train_dataset.statistics,
             "validation": self.validation_dataset.statistics if self.validation_dataset else None,
             "test": self.test_dataset.statistics,
+            "cell_images_size": self.train_dataset.cell_images[0].shape if self.train_dataset.cell_images else None,
         }
         super().__init__(
             cfg,
@@ -195,8 +208,8 @@ class DataModule(AbstractDataModule):
             test_dataset=self.test_dataset,
         )
 
-    def _initialize_dataset(self, split, data, cfg):
-        return Dataset(split=split, input_data=data, cfg=cfg)
+    def _initialize_dataset(self, split, data, cell_images, cfg):
+        return Dataset(split=split, input_data=data, cell_images=cell_images, cfg=cfg)
 
     def collate(self, batch):
         return self._create_batch(batch)
@@ -234,6 +247,39 @@ class DataModule(AbstractDataModule):
         assert all(column in data.columns for column in ['coord_X', 'coord_Y', 'cell_section', 'cell_class'])
         
         return data
+    
+    def cell_images_loading(self, cfg: omegaconf.DictConfig, split) -> np.ndarray:
+        """
+        Load the cell images from the specified path.
+        Args:
+            cfg: Configuration object containing dataset paths.
+            split: The split of the dataset ('train', 'validation', 'test').
+        Returns:
+            np.ndarray: Array of loaded cell images.
+        """
+        if split == 'train':
+            cell_images_path = cfg.dataset.train_cell_images_path
+        elif split == 'validation':
+            cell_images_path = cfg.dataset.validation_cell_images_path
+        else:
+            cell_images_path = cfg.dataset.test_cell_images_path
+        
+        extracted_images = []
+        # loop through all the tar files at cell_images_path and load the all the cell images
+        for root, dirs, files in os.walk(cell_images_path):
+            for file in files:
+                if file.endswith('.tar'):
+                    tar_file_path = os.path.join(root, file)
+                    with tarfile.open(tar_file_path, 'r') as tar:
+                        for tarinfo in tar:
+                            if tarinfo.name.endswith(('.npy')):
+                                file_obj = tar.extractfile(tarinfo)
+                                image_data = file_obj.read()
+                                image_array = np.load(BytesIO(image_data))
+                                extracted_images.append(image_array)
+                print(f"Extracted {len(extracted_images)} images from {tar_file_path}")
+            print(f"Finished extracting images from {cell_images_path}")
+        return extracted_images
 
 
 class Infos(AbstractDatasetInfos):
@@ -261,6 +307,7 @@ class Infos(AbstractDatasetInfos):
             "test"
         ].num_cell_to_region_mapping_dict
         self.input_dims["node_features_dimensions"] = self.num_genes
+        self.input_dims["cell_image_size"] = datamodule.statistics["cell_images_size"]
         self.input_dims["diffusion_time_dimensions"] = 1
         self.output_dims["node_features_dimensions"] = self.num_genes
         self.output_dims["diffusion_time_dimensions"] = 0

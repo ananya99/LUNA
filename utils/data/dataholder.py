@@ -30,6 +30,7 @@ class DataHolder:
         self,
         positions: torch.Tensor,
         node_features: torch.Tensor,
+        cell_images: torch.Tensor,
         diffusion_time: int,
         cell_ID=None,
         cell_class=None,
@@ -42,7 +43,8 @@ class DataHolder:
         """
         self.positions = positions
         self.node_features = node_features
-        self.cell_class = cell_class
+        self.cell_images = cell_images if cell_images is not None else None
+        self.cell_class = cell_class 
         self.cell_ID = cell_ID
         self.t_int = t_int
         self.t = t
@@ -56,6 +58,7 @@ class DataHolder:
         device = node_features.device
         self.positions = to_device(self.positions, device)
         self.node_features = to_device(self.node_features, device)
+        self.cell_images = to_device(self.cell_images, device) if self.cell_images is not None else None
         self.cell_class = to_device(self.cell_class, device)
         self.cell_ID = to_device(self.cell_ID, device)
         return self
@@ -71,6 +74,7 @@ class DataHolder:
         node_features_mask = node_mask.unsqueeze(-1)  # bs, n, 1
 
         self.node_features = apply_mask(self.node_features, node_mask)
+        self.cell_images = apply_mask(self.cell_images, node_features_mask) if self.cell_images is not None else None
         self.positions = apply_mask(self.positions, node_mask)
         if self.positions is not None:
             self.positions = center_positions(self.positions, node_mask)
@@ -98,6 +102,7 @@ class DataHolder:
             node_features=self.node_features.clone()
             if self.node_features is not None
             else None,
+            cell_images=self.cell_images.clone() if self.cell_images is not None else None,
             cell_class=self.cell_class.clone() if self.cell_class is not None else None,
             diffusion_time=self.diffusion_time,
             cell_ID=self.cell_ID.clone() if self.cell_ID is not None else None,
@@ -114,6 +119,7 @@ class DataHolder:
 
         dense_data = DataHolder(
             node_features=extract(batches.node_features),
+            cell_images=extract(batches.cell_images) if batches.cell_images is not None else None,
             positions=extract(batches.positions),
             node_mask=extract(batches.node_mask),
             cell_ID=extract(batches.cell_ID) if batches.cell_ID is not None else None,
@@ -129,6 +135,8 @@ class DataHolder:
         return (
             f"positions: {self.positions.shape if isinstance(self.positions, torch.Tensor) else self.positions} -- "
             + f"node_features: {self.node_features.shape if isinstance(self.node_features, torch.Tensor) else self.node_features} -- "
+            + f"cell_images: {self.cell_images.shape if isinstance(self.cell_images, torch.Tensor) else self.cell_images} -- "
+            + f"diffusion_time: {self.diffusion_time} -- "
             + f"cell_class: {self.cell_class.shape if isinstance(self.cell_class, torch.Tensor) else self.cell_class} -- "
             + f"cell_ID: {self.cell_ID.shape if isinstance(self.cell_ID, torch.Tensor) else self.cell_ID} -- "
             + f"t_int: {self.t_int} -- "

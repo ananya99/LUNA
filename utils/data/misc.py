@@ -25,6 +25,10 @@ def to_batch(data: DataHolder, device=None) -> DataHolder:
     """
 
     node_features, node_mask = to_dense_batch(x=data.node_features, batch=data.batch)
+    if data.cell_images is not None:
+        cell_images, _ = to_dense_batch(x=data.cell_images, batch=data.batch)
+        if cell_images.dim() == 2:
+            cell_images = cell_images.unsqueeze(-1)
     pos, _ = to_dense_batch(x=data.positions, batch=data.batch)
     cell_class, _ = to_dense_batch(x=data.cell_class, batch=data.batch)
     if cell_class.dim() == 2:
@@ -47,6 +51,7 @@ def to_batch(data: DataHolder, device=None) -> DataHolder:
 
     if device is not None:
         node_features = node_features.to(device)
+        cell_images = cell_images.to(device) if cell_images is not None else None
         pos = pos.to(device)
         node_mask = node_mask.to(device)
         cell_class = cell_class.to(device)
@@ -54,6 +59,7 @@ def to_batch(data: DataHolder, device=None) -> DataHolder:
 
     data = DataHolder(
         node_features=node_features,
+        cell_images=cell_images,
         positions=pos,
         node_mask=node_mask,
         cell_class=cell_class,
