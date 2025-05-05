@@ -61,9 +61,10 @@ class SelfAttention(nn.Module):
             nn.ReLU(),
             nn.Linear(64, delta_dimensions),
         )
+        
         # Node Transformation (Attention)
         total_feature_dim = (
-            node_features_dimensions + delta_dimensions + diffusion_time_dimensions
+            node_features_dimensions + delta_dimensions + diffusion_time_dimensions + 512  # 512 is the output dim of the encoder
         )
         self.lin_node_features = torch.nn.Linear(
             node_features_dimensions, node_features_dimensions
@@ -96,6 +97,7 @@ class SelfAttention(nn.Module):
         node_features: torch.Tensor,
         positions: torch.Tensor,
         diffusion_time: torch.Tensor,
+        cell_images: torch.Tensor,
         node_mask: torch.Tensor,
         e_mask1: torch.Tensor,
         e_mask2: torch.Tensor,
@@ -106,9 +108,9 @@ class SelfAttention(nn.Module):
             -1, node_features.size(1), -1
         )
 
-        # Concatenate transformed features
+        # Concatenate transformed features with cell images
         concatenated_features = torch.cat(
-            [transformed_X, transformed_delta, transformed_time],
+            [transformed_X, transformed_delta, transformed_time, cell_images],
             dim=-1,
         )
         concatenated_features = self.concatenated_features(concatenated_features)
@@ -164,6 +166,7 @@ class SelfAttention(nn.Module):
         node_features: torch.Tensor,
         diffusion_time: torch.Tensor,
         positions: torch.Tensor,
+        cell_images: torch.Tensor,
         node_mask: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
@@ -200,22 +203,24 @@ class SelfAttention(nn.Module):
             diffusion_time=diffusion_time,
         )
 
-        transformed_node_features = self.transform_node_features(
+        # Transform node features with cell images
+        transformed_features = self.transform_node_features(
             node_features=node_features,
             positions=positions,
-            diffusion_time=transformed_diffusion_time,
+            diffusion_time=diffusion_time,
+            cell_images=cell_images,
             node_mask=node_mask,
             e_mask1=edge_mask_1,
             e_mask2=edge_mask_2,
         )
 
-        # Create the transformed positions based on the edge embeddings and the node positions
-        transformed_positions = self.transform_positions(
-            head_outputs=transformed_node_features,
+        # Transform positions
+        transformed_position = self.transform_positions(
+            head_outputs=transformed_features,
         )
 
         return (
-            transformed_node_features,
+            transformed_features,
             transformed_diffusion_time,
-            transformed_positions,
+            transformed_position,
         )

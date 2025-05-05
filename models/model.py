@@ -54,6 +54,7 @@ class Model(nn.Module):
         self.n_layers = n_layers
         self.input_dimensions_node_features = input_dims["node_features_dimensions"]
         self.input_dimensions_diffusion_time = input_dims["diffusion_time_dimensions"]
+        # self.input_dimensions_cell_images = input_dims["cell_images_dimensions"]
         self.output_dimensions_node_features = output_dims["node_features_dimensions"]
         self.output_dimensions_diffusion_time = output_dims["diffusion_time_dimensions"]
         self.positionMLP_eps = positionMLP_eps
@@ -79,6 +80,16 @@ class Model(nn.Module):
 
         # MLP for processing input positions
         self.mlp_in_position = PositionsMLP(hidden_mlp_dims["pos"])
+
+        # Image encoder
+        self.encoder = nn.Sequential(
+            nn.Conv2d(3, 64, 4, 2, 1),  # downsample
+            nn.ReLU(),
+            nn.Conv2d(64, 128, 4, 2, 1),
+            nn.ReLU(),
+            nn.Flatten(),
+            nn.Linear(128*56*56, 512)  # final latent dim
+        )
 
         # List of TransformerLayer instances
         self.transformer_layers = nn.ModuleList(
@@ -111,15 +122,6 @@ class Model(nn.Module):
             nn.Linear(hidden_mlp_dims["X"], 1),
         )
 
-        self.encoder = nn.Sequential(
-            nn.Conv2d(3, 64, 4, 2, 1),  # downsample
-            nn.ReLU(),
-            nn.Conv2d(64, 128, 4, 2, 1),
-            nn.ReLU(),
-            nn.Flatten(),
-            nn.Linear(128*56*56, 512)  # final latent dim
-        )
-
         # MLP for processing output positions
         self.mlp_out_pos = PositionsMLP(hidden_mlp_dims["pos"])
 
@@ -138,12 +140,17 @@ class Model(nn.Module):
         diffusion_time = data.diffusion_time
         positions = data.positions
         cell_images = data.cell_images
-        if cell_images is None:
-            print("Warning: cell_images is None")
-        else:
-            print("cell_images shape:", cell_images.shape)
+
+        # Process cell images through encoder if they exist
+        if cell_images is not None:
+            # Reshape cell images to match batch and node dimensions
+            batch_size, num_nodes = node_features.shape[:2]
+            cell_images = cell_images.reshape(batch_size, num_nodes, -1)
             cell_images = self.encoder(cell_images)
-            print("cell_images shape after encoder:", cell_images.shape)
+        else:
+            # Create zero tensor with same shape as encoded images if no images
+            batch_size, num_nodes = node_features.shape[:2]
+            cell_images = torch.zeros((batch_size, num_nodes, 512), device=node_features.device)
 
         add_diffusion_time_to_out = diffusion_time[
             ..., : self.output_dimensions_diffusion_time
@@ -185,6 +192,7 @@ class Model(nn.Module):
         # Create output DataHolder
         out = DataHolder(
             node_features=transformed_node_features,
+            cell_images=cell_images,  # Pass through encoded cell images
             diffusion_time=diffusion_time,
             positions=pos,
             node_mask=node_mask,

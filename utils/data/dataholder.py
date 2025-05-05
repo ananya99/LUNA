@@ -30,8 +30,8 @@ class DataHolder:
         self,
         positions: torch.Tensor,
         node_features: torch.Tensor,
-        cell_images: torch.Tensor,
         diffusion_time: int,
+        cell_images=None,
         cell_ID=None,
         cell_class=None,
         t_int=None,
@@ -58,7 +58,7 @@ class DataHolder:
         device = node_features.device
         self.positions = to_device(self.positions, device)
         self.node_features = to_device(self.node_features, device)
-        self.cell_images = to_device(self.cell_images, device) if self.cell_images is not None else None
+        self.cell_images = to_device(self.cell_images, device)
         self.cell_class = to_device(self.cell_class, device)
         self.cell_ID = to_device(self.cell_ID, device)
         return self

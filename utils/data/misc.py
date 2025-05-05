@@ -23,12 +23,16 @@ def to_batch(data: DataHolder, device=None) -> DataHolder:
     Returns:
         DataHolder: Batch representation of the input data.
     """
-
+    print("########data:", data)
     node_features, node_mask = to_dense_batch(x=data.node_features, batch=data.batch)
-    if data.cell_images is not None:
+    if hasattr(data, "cell_images"):
         cell_images, _ = to_dense_batch(x=data.cell_images, batch=data.batch)
         if cell_images.dim() == 2:
             cell_images = cell_images.unsqueeze(-1)
+    else:
+        # Handle the missing case, maybe raise an error or skip
+        raise ValueError("Data does not have cell_images")
+        
     pos, _ = to_dense_batch(x=data.positions, batch=data.batch)
     cell_class, _ = to_dense_batch(x=data.cell_class, batch=data.batch)
     if cell_class.dim() == 2:

@@ -117,6 +117,7 @@ class TransformerLayer(nn.Module):
         - Dataholder: Updated node features, diffusion time, positions, and node mask.
         """
         node_features = features.node_features
+        cell_images = features.cell_images
         diffusion_time = features.diffusion_time
         positions = features.positions
         node_mask = features.node_mask
@@ -130,6 +131,7 @@ class TransformerLayer(nn.Module):
             node_features=node_features,
             diffusion_time=diffusion_time,
             positions=positions,
+            cell_images=cell_images,
             node_mask=node_mask,
         )
 
@@ -177,6 +179,7 @@ class TransformerLayer(nn.Module):
 
         out = DataHolder(
             node_features=transformed_features,
+            cell_images=cell_images,
             diffusion_time=transformed_diffusion_time,
             positions=transformed_position,
             node_mask=node_mask,

@@ -75,6 +75,7 @@ class Dataset(InMemoryDataset):
             clean_cell_class,
             gene_names,
             cell_class_decoder,
+            cell_images=self.cell_images,
         )
 
     def _convert_data_to_tensors(self, gene_names: list):
@@ -112,7 +113,7 @@ class Dataset(InMemoryDataset):
         self._data.node_features = clean_node_features
         self._data.cell_class = clean_cell_class
         self._data.cell_ID = cell_ID
-        self.data.cell_images = torch.tensor(
+        self._data.cell_images = torch.tensor(
             cell_images, dtype=torch.float32
         ) if cell_images is not None else None
 
@@ -148,6 +149,7 @@ class Dataset(InMemoryDataset):
                 "positions",
                 "cell_class",
                 "cell_ID",
+                "cell_images",
             ]
         }
 
@@ -177,6 +179,13 @@ class Dataset(InMemoryDataset):
         print(self.maximum_graph_size)
         print(np.unique(slice_))
 
+        # Slice cell_images based on the generated indices
+        if self.cell_images is not None:
+            sliced_cell_images = []
+            for start, end in zip(slice_[:-1], slice_[1:]):
+                sliced_cell_images.append(self.cell_images[start:end])
+            self._data.sliced_cell_images = sliced_cell_images
+
         return np.unique(slice_)
 
 
@@ -199,7 +208,7 @@ class DataModule(AbstractDataModule):
             "train": self.train_dataset.statistics,
             "validation": self.validation_dataset.statistics if self.validation_dataset else None,
             "test": self.test_dataset.statistics,
-            "cell_images_size": self.train_dataset.cell_images[0].shape if self.train_dataset.cell_images else None,
+            "cell_images_size": self.train_dataset.cell_images[0].shape if self.train_dataset.cell_images is not None and len(self.train_dataset.cell_images)>0 else None,
         }
         super().__init__(
             cfg,
@@ -220,6 +229,9 @@ class DataModule(AbstractDataModule):
             [data.node_features for data in batch], dim=0
         )
         batch_data.positions = torch.cat([data.positions for data in batch], dim=0)
+        batch_data.cell_images = torch.cat(
+            [data.cell_images for data in batch], dim=0
+        ) if hasattr(batch[0], "cell_images") else None
         batch_data.cell_class = torch.cat([data.cell_class for data in batch], dim=0)
         batch_data.cell_ID = torch.cat([data.cell_ID for data in batch], dim=0)
 
@@ -250,36 +262,48 @@ class DataModule(AbstractDataModule):
     
     def cell_images_loading(self, cfg: omegaconf.DictConfig, split) -> np.ndarray:
         """
-        Load the cell images from the specified path.
+        Load the cell images from the specified path or generate mock images in debug mode.
         Args:
             cfg: Configuration object containing dataset paths.
             split: The split of the dataset ('train', 'validation', 'test').
         Returns:
-            np.ndarray: Array of loaded cell images.
+            np.ndarray: Array of loaded or mock cell images.
         """
-        if split == 'train':
-            cell_images_path = cfg.dataset.train_cell_images_path
-        elif split == 'validation':
-            cell_images_path = cfg.dataset.validation_cell_images_path
+        if cfg.general.mode == "debug":
+            # Generate mock images (128x128 zero images) for all cells
+            data_path = (
+                cfg.dataset.train_data_path if split == 'train' else
+                cfg.dataset.validation_data_path if split == 'validation' else
+                cfg.dataset.test_data_path
+            )
+            data = pd.read_csv(f"{data_path}", index_col=0)
+            num_cells = data.shape[0]
+            print(f"Debug mode enabled. Generating {num_cells} mock images.")
+            return np.zeros((num_cells, 128, 128), dtype=np.float32)
         else:
-            cell_images_path = cfg.dataset.test_cell_images_path
-        
-        extracted_images = []
-        # loop through all the tar files at cell_images_path and load the all the cell images
-        for root, dirs, files in os.walk(cell_images_path):
-            for file in files:
-                if file.endswith('.tar'):
-                    tar_file_path = os.path.join(root, file)
-                    with tarfile.open(tar_file_path, 'r') as tar:
-                        for tarinfo in tar:
-                            if tarinfo.name.endswith(('.npy')):
-                                file_obj = tar.extractfile(tarinfo)
-                                image_data = file_obj.read()
-                                image_array = np.load(BytesIO(image_data))
-                                extracted_images.append(image_array)
-                print(f"Extracted {len(extracted_images)} images from {tar_file_path}")
-            print(f"Finished extracting images from {cell_images_path}")
-        return extracted_images
+            if split == 'train':
+                cell_images_path = cfg.dataset.train_cell_images_path
+            elif split == 'validation':
+                cell_images_path = cfg.dataset.validation_cell_images_path
+            else:
+                cell_images_path = cfg.dataset.test_cell_images_path
+            
+            extracted_images = []
+            # loop through all the tar files at cell_images_path and load the all the cell images
+            for root, dirs, files in os.walk(cell_images_path):
+                for file in files:
+                    if file.endswith('.tar'):
+                        tar_file_path = os.path.join(root, file)
+                        with tarfile.open(tar_file_path, 'r') as tar:
+                            for tarinfo in tar:
+                                if tarinfo.name.endswith(('.npy')):
+                                    file_obj = tar.extractfile(tarinfo)
+                                    image_data = file_obj.read()
+                                    image_array = np.load(BytesIO(image_data))
+                                    extracted_images.append(image_array)
+                    print(f"Extracted {len(extracted_images)} images from {tar_file_path}")
+                print(f"Finished extracting images from {cell_images_path}")
+            return extracted_images
 
 
 class Infos(AbstractDatasetInfos):
