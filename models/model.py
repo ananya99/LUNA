@@ -1,5 +1,6 @@
 import torch.nn as nn
 
+from models.image_encoder import ImageEncoder
 from models.layers import PositionsMLP
 from models.transformer import TransformerLayer
 from utils.data.dataholder import DataHolder
@@ -80,42 +81,22 @@ class Model(nn.Module):
         # MLP for processing input positions
         self.mlp_in_position = PositionsMLP(hidden_mlp_dims["pos"])
 
-        # Image encoder, 128*128 to final hidden_dims["cell_image_dimensions"]
-        self.encoder = nn.Sequential(
-            nn.Conv2d(1, 64, 4, 2, 1),  # downsample
-            nn.ReLU(),
-            nn.Conv2d(64, 128, 4, 2, 1),
-            nn.ReLU(),
-            nn.Flatten(),
-            nn.Linear(128*32*32, hidden_dims["cell_image_dimensions"])  # final latent dim
+        # Image encoder
+        self.encoder = ImageEncoder(hidden_dims)
+        
+        # Gated fusion module
+        self.gate = nn.Sequential(
+            nn.Linear(hidden_dims["dx"] + hidden_dims["cell_image_dimensions"], hidden_dims["dx"]),
+            nn.LayerNorm(hidden_dims["dx"]),
+            nn.Sigmoid()
         )
         
-        # self.encoder2 = nn.Sequential(
-        #     nn.Conv2d(1, 32, 3, 2, 1),  # 128 -> 64
-        #     nn.BatchNorm2d(32),
-        #     nn.ReLU(),
-            
-        #     nn.Conv2d(32, 64, 3, 2, 1),  # 64 -> 32
-        #     nn.BatchNorm2d(64),
-        #     nn.ReLU(),
-
-        #     nn.Conv2d(64, 128, 3, 2, 1),  # 32 -> 16
-        #     nn.BatchNorm2d(128),
-        #     nn.ReLU(),
-
-        #     nn.AdaptiveAvgPool2d((1, 1)),  # spatial -> (1,1)
-        #     nn.Flatten(),
-        #     nn.Linear(128, hidden_dims["cell_image_dimensions"])
-        # )
-        
-        # encoder3
-        # from torchvision.models.vision_transformer import vit_b_16
-
-        # vit = vit_b_16(weights=None)
-        # vit.conv_proj = nn.Conv2d(1, vit.conv_proj.out_channels, kernel_size=16, stride=16)
-        # vit.heads = nn.Linear(vit.heads.in_features, hidden_dims["cell_image_dimensions"])
-
-        # self.encoder = vit
+        self.fusion_transform = nn.Sequential(
+            nn.Linear(hidden_dims["dx"] + hidden_dims["cell_image_dimensions"], hidden_dims["dx"]),
+            nn.LayerNorm(hidden_dims["dx"]),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.1)
+        )
 
         # List of TransformerLayer instances
         self.transformer_layers = nn.ModuleList(
@@ -168,20 +149,33 @@ class Model(nn.Module):
         positions = data.positions
         cell_images = data.cell_images if data.cell_images is not None else None
 
+        add_diffusion_time_to_out = diffusion_time[
+            ..., : self.output_dimensions_diffusion_time
+        ]
+        
         # Process cell images through encoder if they exist
         if cell_images is not None:
             batch_size, num_cells = cell_images.shape[0], cell_images.shape[1]
             cell_images = cell_images.view(batch_size * num_cells, 1, 128, 128)
             cell_images_encoded = self.encoder(cell_images)
             cell_images_encoded = cell_images_encoded.view(batch_size, num_cells, -1)
-            # print("\nEncoded cell images shape:", cell_images_encoded.shape)
+            
+            # Process gene features
+            transformed_node_features = self.mlp_in_node_features(node_features)
+            
+            # Combine features using gated mechanism
+            combined = torch.cat([transformed_node_features, cell_images_encoded], dim=-1)
+            gate_values = self.gate(combined)
+            transformed = self.fusion_transform(combined)
+            
+            # Gate the features
+            transformed_node_features = (
+                gate_values * transformed + 
+                (1 - gate_values) * transformed_node_features
+            )
+        else:
+            transformed_node_features = self.mlp_in_node_features(node_features)
 
-        add_diffusion_time_to_out = diffusion_time[
-            ..., : self.output_dimensions_diffusion_time
-        ]
-
-        # Process input features using MLPs
-        transformed_node_features = self.mlp_in_node_features(node_features)
         transformed_diffusion_time = self.mlp_in_diffusion_time(diffusion_time)
         transformed_positions = self.mlp_in_position(positions, node_mask)
 

@@ -26,9 +26,10 @@ def training_step_func(self, data: DataHolder, i: int) -> torch.Tensor:
 
     # Preprocess the input data
     batched_data = to_batch(data)
-    cell_images = batched_data.cell_images.clone()
+    cell_images = batched_data.cell_images.clone() if hasattr(batched_data, "cell_images") else None
     z_t = self.noise_model.apply_noise(batched_data)
-    z_t.cell_images = cell_images
+    if hasattr(batched_data, "cell_images"):
+        z_t.cell_images = cell_images 
 
     # Forward pass through the model
 
