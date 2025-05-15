@@ -20,6 +20,7 @@ class SelfAttention(nn.Module):
     def __init__(
         self,
         node_features_dimensions: torch.Tensor,
+        cell_image_dimensions: torch.Tensor,
         diffusion_time_dimensions: torch.Tensor,
         delta_dimensions: torch.Tensor,
         num_heads: int,
@@ -40,6 +41,7 @@ class SelfAttention(nn.Module):
             node_features_dimensions % num_heads == 0
         ), f"node_features_dimensions: {node_features_dimensions} -- nhead: {num_heads}"
         self.node_features_dimensions = node_features_dimensions
+        self.cell_image_dimensions = cell_image_dimensions
         self.diffusion_time_dimensions = diffusion_time_dimensions
         self.delta_dimensions = delta_dimensions
         self.num_heads = num_heads
@@ -64,7 +66,7 @@ class SelfAttention(nn.Module):
         
         # Node Transformation (Attention)
         total_feature_dim = (
-            node_features_dimensions + delta_dimensions + diffusion_time_dimensions + 512  # 512 is the output dim of the encoder
+            node_features_dimensions + delta_dimensions + diffusion_time_dimensions + cell_image_dimensions
         )
         self.lin_node_features = torch.nn.Linear(
             node_features_dimensions, node_features_dimensions
@@ -95,26 +97,53 @@ class SelfAttention(nn.Module):
     def transform_node_features(
         self,
         node_features: torch.Tensor,
+        cell_images: torch.Tensor,
         positions: torch.Tensor,
         diffusion_time: torch.Tensor,
-        cell_images: torch.Tensor,
         node_mask: torch.Tensor,
         e_mask1: torch.Tensor,
         e_mask2: torch.Tensor,
     ) -> torch.Tensor:
+        
+        # Get the device of the first tensor (assuming all inputs should be on the same device)
+        device = node_features.device
+        
+        # Transform node features
         transformed_X = self.lin_node_features(node_features)
+        
+        # Transform positions
         transformed_delta = self.transform_positions_for_attention(positions, node_mask)
+        
+        # Transform diffusion time
         transformed_time = diffusion_time.unsqueeze(1).expand(
             -1, node_features.size(1), -1
         )
+        
+        # print("\nTransformed shapes:")
+        # print("transformed_X:", transformed_X.shape)
+        # print("transformed_delta:", transformed_delta.shape)
+        # print("transformed_time:", transformed_time.shape)
+        # print("cell_images:", cell_images.shape if cell_images is not None else None)
+        
+        # Concatenate features
+        if cell_images is None:
+            batch_size, num_nodes, _ = transformed_X.shape
+            cell_images = torch.zeros(
+                batch_size, num_nodes, self.cell_image_dimensions,
+                device=device  # Create zeros tensor on the same device
+            )
 
-        # Concatenate transformed features with cell images
         concatenated_features = torch.cat(
             [transformed_X, transformed_delta, transformed_time, cell_images],
             dim=-1,
         )
+        
+        # Apply linear transformation to match expected dimensions
         concatenated_features = self.concatenated_features(concatenated_features)
+        
+        # Apply attention
         head_outputs = self.attention(concatenated_features)
+                
         return head_outputs
 
     def transform_diffusion_time(
@@ -164,9 +193,9 @@ class SelfAttention(nn.Module):
     def forward(
         self,
         node_features: torch.Tensor,
+        cell_images: torch.Tensor,
         diffusion_time: torch.Tensor,
         positions: torch.Tensor,
-        cell_images: torch.Tensor,
         node_mask: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
@@ -206,9 +235,9 @@ class SelfAttention(nn.Module):
         # Transform node features with cell images
         transformed_features = self.transform_node_features(
             node_features=node_features,
+            cell_images=cell_images,
             positions=positions,
             diffusion_time=diffusion_time,
-            cell_images=cell_images,
             node_mask=node_mask,
             e_mask1=edge_mask_1,
             e_mask2=edge_mask_2,

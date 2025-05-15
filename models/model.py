@@ -54,7 +54,6 @@ class Model(nn.Module):
         self.n_layers = n_layers
         self.input_dimensions_node_features = input_dims["node_features_dimensions"]
         self.input_dimensions_diffusion_time = input_dims["diffusion_time_dimensions"]
-        # self.input_dimensions_cell_images = input_dims["cell_images_dimensions"]
         self.output_dimensions_node_features = output_dims["node_features_dimensions"]
         self.output_dimensions_diffusion_time = output_dims["diffusion_time_dimensions"]
         self.positionMLP_eps = positionMLP_eps
@@ -81,21 +80,49 @@ class Model(nn.Module):
         # MLP for processing input positions
         self.mlp_in_position = PositionsMLP(hidden_mlp_dims["pos"])
 
-        # Image encoder
+        # Image encoder, 128*128 to final hidden_dims["cell_image_dimensions"]
         self.encoder = nn.Sequential(
-            nn.Conv2d(3, 64, 4, 2, 1),  # downsample
+            nn.Conv2d(1, 64, 4, 2, 1),  # downsample
             nn.ReLU(),
             nn.Conv2d(64, 128, 4, 2, 1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(128*56*56, 512)  # final latent dim
+            nn.Linear(128*32*32, hidden_dims["cell_image_dimensions"])  # final latent dim
         )
+        
+        # self.encoder2 = nn.Sequential(
+        #     nn.Conv2d(1, 32, 3, 2, 1),  # 128 -> 64
+        #     nn.BatchNorm2d(32),
+        #     nn.ReLU(),
+            
+        #     nn.Conv2d(32, 64, 3, 2, 1),  # 64 -> 32
+        #     nn.BatchNorm2d(64),
+        #     nn.ReLU(),
+
+        #     nn.Conv2d(64, 128, 3, 2, 1),  # 32 -> 16
+        #     nn.BatchNorm2d(128),
+        #     nn.ReLU(),
+
+        #     nn.AdaptiveAvgPool2d((1, 1)),  # spatial -> (1,1)
+        #     nn.Flatten(),
+        #     nn.Linear(128, hidden_dims["cell_image_dimensions"])
+        # )
+        
+        # encoder3
+        # from torchvision.models.vision_transformer import vit_b_16
+
+        # vit = vit_b_16(weights=None)
+        # vit.conv_proj = nn.Conv2d(1, vit.conv_proj.out_channels, kernel_size=16, stride=16)
+        # vit.heads = nn.Linear(vit.heads.in_features, hidden_dims["cell_image_dimensions"])
+
+        # self.encoder = vit
 
         # List of TransformerLayer instances
         self.transformer_layers = nn.ModuleList(
             [
                 TransformerLayer(
                     node_features_dimensions=hidden_dims["dx"],
+                    cell_image_dimensions=hidden_dims["cell_image_dimensions"],
                     diffusion_time_dimensions=hidden_dims["dy"],
                     delta_dimensions=hidden_dims["dd"],
                     num_heads=hidden_dims["num_heads"],
@@ -139,29 +166,30 @@ class Model(nn.Module):
         node_features = data.node_features
         diffusion_time = data.diffusion_time
         positions = data.positions
-        cell_images = data.cell_images
+        cell_images = data.cell_images if data.cell_images is not None else None
 
         # Process cell images through encoder if they exist
         if cell_images is not None:
-            # Reshape cell images to match batch and node dimensions
-            batch_size, num_nodes = node_features.shape[:2]
-            cell_images = cell_images.reshape(batch_size, num_nodes, -1)
-            cell_images = self.encoder(cell_images)
-        else:
-            # Create zero tensor with same shape as encoded images if no images
-            batch_size, num_nodes = node_features.shape[:2]
-            cell_images = torch.zeros((batch_size, num_nodes, 512), device=node_features.device)
+            batch_size, num_cells = cell_images.shape[0], cell_images.shape[1]
+            cell_images = cell_images.view(batch_size * num_cells, 1, 128, 128)
+            cell_images_encoded = self.encoder(cell_images)
+            cell_images_encoded = cell_images_encoded.view(batch_size, num_cells, -1)
+            # print("\nEncoded cell images shape:", cell_images_encoded.shape)
 
         add_diffusion_time_to_out = diffusion_time[
             ..., : self.output_dimensions_diffusion_time
         ]
 
         # Process input features using MLPs
+        transformed_node_features = self.mlp_in_node_features(node_features)
+        transformed_diffusion_time = self.mlp_in_diffusion_time(diffusion_time)
+        transformed_positions = self.mlp_in_position(positions, node_mask)
+
         transformed_features = DataHolder(
-            node_features=self.mlp_in_node_features(node_features),
-            cell_images=cell_images,
-            diffusion_time=self.mlp_in_diffusion_time(diffusion_time),
-            positions=self.mlp_in_position(positions, node_mask),
+            node_features=transformed_node_features,
+            cell_images=cell_images_encoded if cell_images is not None else None,
+            diffusion_time=transformed_diffusion_time,
+            positions=transformed_positions,
             node_mask=node_mask,
         ).mask()
 
@@ -192,10 +220,10 @@ class Model(nn.Module):
         # Create output DataHolder
         out = DataHolder(
             node_features=transformed_node_features,
-            cell_images=cell_images,  # Pass through encoded cell images
             diffusion_time=diffusion_time,
             positions=pos,
             node_mask=node_mask,
         ).mask()
 
         return out
+

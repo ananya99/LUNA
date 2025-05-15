@@ -10,9 +10,23 @@ def to_device(tensor, device):
 
 def apply_mask(tensor, mask, mask_dim=-1):
     """
-    Applies a mask to a tensor by broadcasting the mask along the last dimension.
+    Applies a mask to a tensor by broadcasting the mask along the specified dimension.
+    For cell images, the mask needs to be broadcasted along the last two dimensions.
     """
-    return tensor * mask.unsqueeze(mask_dim) if tensor is not None else None
+    if tensor is None:
+        return None
+        
+    # print("mask.shape:", mask.shape)
+    # print("tensor.shape:", tensor.shape)
+    if len(tensor.shape) == 4:  # This is a cell image tensor (batch_size, num_nodes, height, width)
+        # Ensure mask has shape (batch_size, num_nodes, 1, 1)
+        if len(mask.shape) == 2:  # (batch_size, num_nodes)
+            mask = mask.unsqueeze(-1).unsqueeze(-1)
+        elif len(mask.shape) == 3:  # (batch_size, num_nodes, 1)
+            mask = mask.unsqueeze(-1)
+        return tensor * mask
+    else:
+        return tensor * mask.unsqueeze(mask_dim)
 
 
 def center_positions(positions, mask):
@@ -74,7 +88,7 @@ class DataHolder:
         node_features_mask = node_mask.unsqueeze(-1)  # bs, n, 1
 
         self.node_features = apply_mask(self.node_features, node_mask)
-        self.cell_images = apply_mask(self.cell_images, node_features_mask) if self.cell_images is not None else None
+        self.cell_images = apply_mask(self.cell_images, node_mask) if self.cell_images is not None else None
         self.positions = apply_mask(self.positions, node_mask)
         if self.positions is not None:
             self.positions = center_positions(self.positions, node_mask)

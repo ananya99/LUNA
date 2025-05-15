@@ -48,7 +48,7 @@ def train_model(cfg: DictConfig, datamodule, dataset_infos):
     callbacks = setup_callbacks(cfg, datamodule)
     trainer = setup_trainer(cfg, callbacks)
 
-    trainer.fit(model, datamodule=datamodule)
+    # trainer.fit(model, datamodule=datamodule)
 
     checkpoints_parent_dir = os.path.join(os.getcwd(), "checkpoints")
     cfg.test.checkpoints_parent_dir = checkpoints_parent_dir

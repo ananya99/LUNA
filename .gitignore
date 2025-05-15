@@ -23,3 +23,8 @@ data/*
 data/*/*
 ./data
 ./data/*
+
+exp/checkpoints/
+exp/lightning_logs/
+exp/outputs/
+exp/wandb/

@@ -1,4 +1,3 @@
-
 import os
 import pathlib
 import omegaconf
@@ -170,13 +169,26 @@ def setup_trainer(cfg: omegaconf.DictConfig, callbacks: list) -> Trainer:
     if wandb.run and local_rank == 0:
         setup_wandb(cfg)
 
+    # Set up devices and strategy based on GPU availability
+    if gpus is None or gpus == 0:
+        devices = 1  # Use 1 CPU core
+        accelerator = 'cpu'
+        strategy = None  # No distributed strategy for CPU
+    else:
+        devices = gpus
+        accelerator = 'gpu'
+        strategy = 'ddp_find_unused_parameters_true'  # DDP strategy for GPU training
+        
+    print(f"Devices: {devices}, Accelerator: {accelerator}, Strategy: {strategy}")
+
     return Trainer(
-        devices=gpus,
+        devices=devices,
+        accelerator=accelerator,
         max_epochs=max_epochs,
         check_val_every_n_epoch=check_val_every_n_epochs,
         fast_dev_run=fast_dev_run,
         callbacks=callbacks,
-        strategy='ddp_find_unused_parameters_true',
+        strategy=strategy,
         log_every_n_steps=50 if fast_dev_run else 1,
         enable_progress_bar=cfg.general.enable_progress_bar,
     )

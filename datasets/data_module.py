@@ -113,8 +113,8 @@ class Dataset(InMemoryDataset):
         self._data.node_features = clean_node_features
         self._data.cell_class = clean_cell_class
         self._data.cell_ID = cell_ID
-        self._data.cell_images = torch.tensor(
-            cell_images, dtype=torch.float32
+        self._data.cell_images = torch.from_numpy(
+            np.array(cell_images, dtype=np.float32)
         ) if cell_images is not None else None
 
         num_cell_to_region_mapping_dict = self._create_region_mapping_dict()
@@ -193,10 +193,8 @@ class DataModule(AbstractDataModule):
     def __init__(self, cfg):
         train_data = self.data_loading(cfg, 'train')
         test_data = self.data_loading(cfg, 'test')
-        train_cell_images = self.cell_images_loading(cfg, 'train')
-        test_cell_images = self.cell_images_loading(cfg, 'test')
-        self.train_dataset = self._initialize_dataset("train", train_data, train_cell_images, cfg)
-        self.test_dataset = self._initialize_dataset("test", test_data, test_cell_images, cfg)
+        self.train_dataset = self._initialize_dataset("train", train_data, self.cell_images_loading(cfg, 'train'), cfg)
+        self.test_dataset = self._initialize_dataset("test", test_data, self.cell_images_loading(cfg, 'test'), cfg)
 
         if cfg.dataset.validation_data_path:
             validation_data = self.data_loading(cfg, 'validation')
@@ -269,8 +267,13 @@ class DataModule(AbstractDataModule):
         Returns:
             np.ndarray: Array of loaded or mock cell images.
         """
+        
+        if cfg.dataset.train_cell_images_path is None or cfg.dataset.test_cell_images_path is None:
+            print("No cell images path provided. Running without cell images.")
+            return None
+
+        # Generate mock images (128x128 zero images) for all cells in debug mode
         if cfg.general.mode == "debug":
-            # Generate mock images (128x128 zero images) for all cells
             data_path = (
                 cfg.dataset.train_data_path if split == 'train' else
                 cfg.dataset.validation_data_path if split == 'validation' else
@@ -280,30 +283,42 @@ class DataModule(AbstractDataModule):
             num_cells = data.shape[0]
             print(f"Debug mode enabled. Generating {num_cells} mock images.")
             return np.zeros((num_cells, 128, 128), dtype=np.float32)
+        
+        if split == 'train':
+            cell_images_path = cfg.dataset.train_cell_images_path
+        elif split == 'validation':
+            cell_images_path = cfg.dataset.validation_cell_images_path
         else:
-            if split == 'train':
-                cell_images_path = cfg.dataset.train_cell_images_path
-            elif split == 'validation':
-                cell_images_path = cfg.dataset.validation_cell_images_path
-            else:
-                cell_images_path = cfg.dataset.test_cell_images_path
-            
-            extracted_images = []
-            # loop through all the tar files at cell_images_path and load the all the cell images
-            for root, dirs, files in os.walk(cell_images_path):
-                for file in files:
-                    if file.endswith('.tar'):
-                        tar_file_path = os.path.join(root, file)
-                        with tarfile.open(tar_file_path, 'r') as tar:
-                            for tarinfo in tar:
-                                if tarinfo.name.endswith(('.npy')):
-                                    file_obj = tar.extractfile(tarinfo)
-                                    image_data = file_obj.read()
-                                    image_array = np.load(BytesIO(image_data))
-                                    extracted_images.append(image_array)
-                    print(f"Extracted {len(extracted_images)} images from {tar_file_path}")
-                print(f"Finished extracting images from {cell_images_path}")
-            return extracted_images
+            cell_images_path = cfg.dataset.test_cell_images_path
+        
+        # First count total number of images
+        total_images = 0
+        for root, dirs, files in os.walk(cell_images_path):
+            for file in files:
+                if file.endswith('.tar'):
+                    with tarfile.open(os.path.join(root, file), 'r') as tar:
+                        total_images += sum(1 for tarinfo in tar if tarinfo.name.endswith('.npy'))
+        
+        # Pre-allocate numpy array
+        all_images = np.zeros((total_images, 128, 128), dtype=np.float32)
+        current_idx = 0
+        
+        # Load images into pre-allocated array
+        for root, dirs, files in os.walk(cell_images_path):
+            for file in files:
+                if file.endswith('.tar'):
+                    tar_file_path = os.path.join(root, file)
+                    with tarfile.open(tar_file_path, 'r') as tar:
+                        for tarinfo in tar:
+                            if tarinfo.name.endswith('.npy'):
+                                file_obj = tar.extractfile(tarinfo)
+                                image_data = file_obj.read()
+                                image_array = np.load(BytesIO(image_data))
+                                all_images[current_idx] = image_array
+                                current_idx += 1
+                print(f"Loaded {current_idx}/{total_images} images from {tar_file_path}")
+            print(f"Finished loading images from {cell_images_path}")
+        return all_images
 
 
 class Infos(AbstractDatasetInfos):
