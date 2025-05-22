@@ -12,6 +12,7 @@ from pytorch_lightning.callbacks import (
 from datasets.data_module import DataModule, Infos
 from diffusion_model import FullDenoisingDiffusion
 from utils.data.abstract_datatype import AbstractDataModule, AbstractDatasetInfos
+from pytorch_lightning.strategies import DDPStrategy
 from utils.data.misc import setup_wandb
 
 def get_resume(
@@ -177,7 +178,8 @@ def setup_trainer(cfg: omegaconf.DictConfig, callbacks: list) -> Trainer:
     else:
         devices = gpus
         accelerator = 'gpu'
-        strategy = 'ddp_find_unused_parameters_true'  # DDP strategy for GPU training
+        # strategy = 'ddp_find_unused_parameters_true'  # DDP strategy for GPU training
+        strategy = DDPStrategy(find_unused_parameters=True)
         
     print(f"Devices: {devices}, Accelerator: {accelerator}, Strategy: {strategy}")
 
