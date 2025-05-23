@@ -18,21 +18,21 @@ class AbstractDataModule(LightningDataset):
         self.cfg = cfg
 
     def train_dataloader(self):
-        return self._create_dataloader(self.train_dataset, self.cfg.train.batch_size)
+        return self._create_dataloader(self.train_dataset, self.cfg.train.batch_size, shuffle=True)
 
     def validation_dataloader(self):
         return self._create_dataloader(
-            self.validation_dataset, self.cfg.validation.batch_size
+            self.validation_dataset, self.cfg.validation.batch_size, shuffle=False
         )
 
     def test_dataloader(self):
-        return self._create_dataloader(self.test_dataset, self.cfg.test.batch_size)
+        return self._create_dataloader(self.test_dataset, self.cfg.test.batch_size, shuffle=False)
 
-    def _create_dataloader(self, dataset, batch_size):
+    def _create_dataloader(self, dataset, batch_size, shuffle=True):
         return DataLoader(
             dataset,
             batch_size=batch_size,
-            shuffle=True,
+            shuffle=shuffle,
             num_workers=32,
             pin_memory=True,
             collate_fn=self.collate,
