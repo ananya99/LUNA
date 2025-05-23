@@ -13,15 +13,18 @@ from utils.diffusion_model.setup.setup import (
     setup_model,
     setup_trainer,
 )
+from exp.config_utils import update_config
 
 @hydra.main(version_base="1.3", config_path="./configs", config_name="config")
-def main(cfg: DictConfig):
+def main(cfg: DictConfig):   
     # Set seed for reproducibility
     set_seed(cfg.general.seed)
     # Set output path for local saving
     cfg.general.local_saved_path = (
         hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
     )
+    
+    cfg = update_config(cfg)
 
     # Set up the dataset
     datamodule, dataset_infos = setup_dataset(cfg)

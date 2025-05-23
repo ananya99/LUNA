@@ -1,5 +1,6 @@
 import torch.nn as nn
 
+from models.image_encoder import ImageEncoder
 from models.layers import PositionsMLP
 from models.transformer import TransformerLayer
 from utils.data.dataholder import DataHolder
@@ -80,42 +81,7 @@ class Model(nn.Module):
         # MLP for processing input positions
         self.mlp_in_position = PositionsMLP(hidden_mlp_dims["pos"])
 
-        # Image encoder, 128*128 to final hidden_dims["cell_image_dimensions"]
-        self.encoder = nn.Sequential(
-            nn.Conv2d(1, 64, 4, 2, 1),  # downsample
-            nn.ReLU(),
-            nn.Conv2d(64, 128, 4, 2, 1),
-            nn.ReLU(),
-            nn.Flatten(),
-            nn.Linear(128*32*32, hidden_dims["cell_image_dimensions"])  # final latent dim
-        )
-        
-        # self.encoder2 = nn.Sequential(
-        #     nn.Conv2d(1, 32, 3, 2, 1),  # 128 -> 64
-        #     nn.BatchNorm2d(32),
-        #     nn.ReLU(),
-            
-        #     nn.Conv2d(32, 64, 3, 2, 1),  # 64 -> 32
-        #     nn.BatchNorm2d(64),
-        #     nn.ReLU(),
-
-        #     nn.Conv2d(64, 128, 3, 2, 1),  # 32 -> 16
-        #     nn.BatchNorm2d(128),
-        #     nn.ReLU(),
-
-        #     nn.AdaptiveAvgPool2d((1, 1)),  # spatial -> (1,1)
-        #     nn.Flatten(),
-        #     nn.Linear(128, hidden_dims["cell_image_dimensions"])
-        # )
-        
-        # encoder3
-        # from torchvision.models.vision_transformer import vit_b_16
-
-        # vit = vit_b_16(weights=None)
-        # vit.conv_proj = nn.Conv2d(1, vit.conv_proj.out_channels, kernel_size=16, stride=16)
-        # vit.heads = nn.Linear(vit.heads.in_features, hidden_dims["cell_image_dimensions"])
-
-        # self.encoder = vit
+        self.encoder = ImageEncoder(hidden_dims["cell_image_dimensions"], "cnn")
 
         # List of TransformerLayer instances
         self.transformer_layers = nn.ModuleList(

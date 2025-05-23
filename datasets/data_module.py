@@ -273,7 +273,7 @@ class DataModule(AbstractDataModule):
             return None
 
         # Generate mock images (128x128 zero images) for all cells in debug mode
-        if cfg.general.mode == "debug":
+        if cfg.general.debug:
             data_path = (
                 cfg.dataset.train_data_path if split == 'train' else
                 cfg.dataset.validation_data_path if split == 'validation' else
