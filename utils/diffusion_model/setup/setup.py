@@ -69,7 +69,7 @@ def create_model_checkpoint_callbacks(cfg: omegaconf.DictConfig) -> list:
         )
         callbacks.append(
             ModelCheckpoint(
-                dirpath="checkpoints", filename="last_epoch", every_n_epochs=1
+                dirpath=checkpoint_dir, filename="last_epoch", every_n_epochs=1
             )
         )
     else:
@@ -80,7 +80,7 @@ def create_model_checkpoint_callbacks(cfg: omegaconf.DictConfig) -> list:
         # Validation disabled: save model at a defined interval
         callbacks.append(
             ModelCheckpoint(
-                dirpath="checkpoints", 
+                dirpath=checkpoint_dir, 
                 filename="{epoch}",
                 save_top_k=-1,     
                 save_on_train_epoch_end=True,

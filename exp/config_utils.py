@@ -9,11 +9,14 @@ import pytz
 
 def update_config(cfg, output_dir, data_directory_name='train_test_split_1', data_time_str=''):
     
-    cfg.general.name = 'luna' +  '_' + data_time_str
+    now = datetime.now()
+    if data_time_str == '':
+        datetime_str = now.strftime("%Y-%m-%d_%H:%M:%S")
+    cfg.general.name = 'luna' +  '_' + datetime_str
 
-    cfg.distribute.gpus_per_node=[1,2,3,4]
-    # cfg.general.wandb='disabled'
-    # cfg.general.debug = True
+    cfg.distribute.gpus_per_node=[0,1,2,3]
+    cfg.general.wandb='disabled'
+    cfg.general.debug = True
 
     cfg.dataset.maximum_graph_size.train=500
     cfg.dataset.maximum_graph_size.test=500
@@ -66,7 +69,6 @@ if __name__ == "__main__":
     # if not os.path.exists(output_dir):
     #     os.makedirs(output_dir)
     # update_config(cfg, output_dir, data_time_str=date_str + '_' + time_str)
-    
     
     # Save the cfg configuration file
     OmegaConf.save(cfg, output_dir + '/config.yaml')

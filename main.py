@@ -20,12 +20,24 @@ from exp.config_utils import update_config
 def main(cfg: DictConfig):   
     # Set seed for reproducibility
     set_seed(cfg.general.seed)
+    
+    # Set output path for local saving
+    output_dir = (
+        hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+    )
+    print("output_dir", output_dir)
+    
+    cfg = update_config(cfg, output_dir=output_dir)
+    # # Save the final cfg configuration file
+    OmegaConf.save(cfg, output_dir + '/config.yaml')
+    print(f"Config saved to {output_dir}/config.yaml")
+    
     # Set up the dataset
     datamodule, dataset_infos = setup_dataset(cfg)
 
     # Run training or testing based on mode
     if cfg.general.mode == "train_and_test":
-        # train_model(cfg, datamodule, dataset_infos)
+        train_model(cfg, datamodule, dataset_infos)
         test_model(cfg, datamodule, dataset_infos)
     elif cfg.general.mode == "test_only":
         test_model(cfg, datamodule, dataset_infos)
@@ -48,13 +60,15 @@ def train_model(cfg: DictConfig, datamodule, dataset_infos):
     trainer.fit(model, datamodule=datamodule)
 
     # checkpoints_parent_dir = os.path.join(os.getcwd(), "checkpoints")
-    # cfg.test.checkpoints_parent_dir = checkpoints_parent_dir
+    cfg.test.checkpoints_parent_dir = cfg.general.local_saved_path + "/checkpoints"
     return cfg.test.checkpoints_parent_dir
 
 
 def test_model(cfg: DictConfig, datamodule, dataset_infos):
     """Test the model using saved checkpoints."""
-    checkpoints_parent_dir = pathlib.Path('/mlbio_scratch/anagupta/luna/checkpoints_DINOv2')
+    # checkpoints_parent_dir = pathlib.Path('/mlbio_scratch/anagupta/luna/checkpoints')
+    # checkpoints_parent_dir = pathlib.Path(cfg.test.checkpoints_parent_dir)
+    checkpoints_parent_dir = cfg.test.checkpoints_parent_dir
     print("Directory:", checkpoints_parent_dir)
 
     checkpoints_name_list = get_checkpoints_list(cfg, checkpoints_parent_dir)

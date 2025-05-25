@@ -17,13 +17,13 @@ test:
   test_save_parent_path: null
   checkpoint_name: all
 general:
-  name: luna_
-  wandb: online
+  name: luna_2025-05-25_22:35:26
+  wandb: disabled
   mode: train_and_test
   seed: 0
   enable_progress_bar: true
   local_saved_path: /mlbio_scratch/anagupta/luna/LUNA/exp
-  debug: false
+  debug: true
 train:
   n_epochs: 500
   batch_size: 4
@@ -52,10 +52,10 @@ model:
     cell_image_embedding_dim: 32
 distribute:
   gpus_per_node:
+  - 0
   - 1
   - 2
   - 3
-  - 4
 dataset:
   dataset_name: luna_with_cell_images
   gene_columns_start: 13
