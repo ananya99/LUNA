@@ -29,7 +29,7 @@ class TransformerLayer(nn.Module):
     def __init__(
         self,
         node_features_dimensions: int,
-        cell_image_dimensions: int,
+        cell_image_embedding_dim: int,
         delta_dimensions: int,
         diffusion_time_dimensions: int,
         num_heads: int,
@@ -60,7 +60,7 @@ class TransformerLayer(nn.Module):
         super().__init__()
         self.self_attn = SelfAttention(
             node_features_dimensions=node_features_dimensions,
-            cell_image_dimensions=cell_image_dimensions,
+            cell_image_embedding_dim=cell_image_embedding_dim,
             delta_dimensions=delta_dimensions,
             diffusion_time_dimensions=diffusion_time_dimensions,
             num_heads=num_heads,

@@ -20,7 +20,7 @@ class SelfAttention(nn.Module):
     def __init__(
         self,
         node_features_dimensions: torch.Tensor,
-        cell_image_dimensions: torch.Tensor,
+        cell_image_embedding_dim: torch.Tensor,
         diffusion_time_dimensions: torch.Tensor,
         delta_dimensions: torch.Tensor,
         num_heads: int,
@@ -41,7 +41,7 @@ class SelfAttention(nn.Module):
             node_features_dimensions % num_heads == 0
         ), f"node_features_dimensions: {node_features_dimensions} -- nhead: {num_heads}"
         self.node_features_dimensions = node_features_dimensions
-        self.cell_image_dimensions = cell_image_dimensions
+        self.cell_image_embedding_dim = cell_image_embedding_dim
         self.diffusion_time_dimensions = diffusion_time_dimensions
         self.delta_dimensions = delta_dimensions
         self.num_heads = num_heads
@@ -66,7 +66,7 @@ class SelfAttention(nn.Module):
         
         # Node Transformation (Attention)
         total_feature_dim = (
-            node_features_dimensions + delta_dimensions + diffusion_time_dimensions + cell_image_dimensions
+            node_features_dimensions + delta_dimensions + diffusion_time_dimensions + cell_image_embedding_dim
         )
         self.lin_node_features = torch.nn.Linear(
             node_features_dimensions, node_features_dimensions
@@ -129,7 +129,7 @@ class SelfAttention(nn.Module):
         if cell_images is None:
             batch_size, num_nodes, _ = transformed_X.shape
             cell_images = torch.zeros(
-                batch_size, num_nodes, self.cell_image_dimensions,
+                batch_size, num_nodes, self.cell_image_embedding_dim,
                 device=device  # Create zeros tensor on the same device
             )
 

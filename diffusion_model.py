@@ -51,6 +51,7 @@ class FullDenoisingDiffusion(pl.LightningModule):
             hidden_mlp_dims=cfg.model.hidden_mlp_dims,
             hidden_dims=cfg.model.hidden_dims,
             output_dims=self.output_dims,
+            cell_image_encoder=cfg.model.cell_image_encoder,
         )
 
         self.noise_model = NoiseModel(cfg)

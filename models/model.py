@@ -37,6 +37,7 @@ class Model(nn.Module):
         hidden_dims: dict,
         output_dims,
         positionMLP_eps: float = 1e-9,
+        cell_image_encoder: str = "CNN",
     ) -> None:
         """
         Constructor to initialize the Model instance.
@@ -58,7 +59,7 @@ class Model(nn.Module):
         self.output_dimensions_node_features = output_dims["node_features_dimensions"]
         self.output_dimensions_diffusion_time = output_dims["diffusion_time_dimensions"]
         self.positionMLP_eps = positionMLP_eps
-
+        self.cell_image_encoder = cell_image_encoder
         act_fn_in = nn.ReLU()
         act_fn_out = nn.ReLU()
 
@@ -81,14 +82,14 @@ class Model(nn.Module):
         # MLP for processing input positions
         self.mlp_in_position = PositionsMLP(hidden_mlp_dims["pos"])
 
-        self.encoder = ImageEncoder(hidden_dims["cell_image_dimensions"], "cnn")
+        self.encoder = ImageEncoder(hidden_dims["cell_image_embedding_dim"], self.cell_image_encoder)
 
         # List of TransformerLayer instances
         self.transformer_layers = nn.ModuleList(
             [
                 TransformerLayer(
                     node_features_dimensions=hidden_dims["dx"],
-                    cell_image_dimensions=hidden_dims["cell_image_dimensions"],
+                    cell_image_embedding_dim=hidden_dims["cell_image_embedding_dim"],
                     diffusion_time_dimensions=hidden_dims["dy"],
                     delta_dimensions=hidden_dims["dd"],
                     num_heads=hidden_dims["num_heads"],

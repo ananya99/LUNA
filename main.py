@@ -1,3 +1,4 @@
+from datetime import datetime
 import hydra
 import random
 import numpy as np
@@ -15,27 +16,16 @@ from utils.diffusion_model.setup.setup import (
 )
 from exp.config_utils import update_config
 
-@hydra.main(version_base="1.3", config_path="./configs", config_name="config")
+@hydra.main(version_base="1.3", config_path="./exp", config_name="config")
 def main(cfg: DictConfig):   
     # Set seed for reproducibility
     set_seed(cfg.general.seed)
-    # Set output path for local saving
-    output_dir = (
-        hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
-    )
-    
-    cfg = update_config(cfg, output_dir=output_dir)
-    
-    # Save the cfg configuration file
-    OmegaConf.save(cfg, output_dir + '/config.yaml')
-    print(f"Config saved to {output_dir}/config.yaml")
-
     # Set up the dataset
     datamodule, dataset_infos = setup_dataset(cfg)
 
     # Run training or testing based on mode
     if cfg.general.mode == "train_and_test":
-        train_model(cfg, datamodule, dataset_infos)
+        # train_model(cfg, datamodule, dataset_infos)
         test_model(cfg, datamodule, dataset_infos)
     elif cfg.general.mode == "test_only":
         test_model(cfg, datamodule, dataset_infos)
@@ -57,14 +47,14 @@ def train_model(cfg: DictConfig, datamodule, dataset_infos):
 
     trainer.fit(model, datamodule=datamodule)
 
-    checkpoints_parent_dir = os.path.join(os.getcwd(), "checkpoints")
-    cfg.test.checkpoints_parent_dir = checkpoints_parent_dir
-    return checkpoints_parent_dir
+    # checkpoints_parent_dir = os.path.join(os.getcwd(), "checkpoints")
+    # cfg.test.checkpoints_parent_dir = checkpoints_parent_dir
+    return cfg.test.checkpoints_parent_dir
 
 
 def test_model(cfg: DictConfig, datamodule, dataset_infos):
     """Test the model using saved checkpoints."""
-    checkpoints_parent_dir = pathlib.Path(cfg.test.checkpoints_parent_dir)
+    checkpoints_parent_dir = pathlib.Path('/mlbio_scratch/anagupta/luna/checkpoints_DINOv2')
     print("Directory:", checkpoints_parent_dir)
 
     checkpoints_name_list = get_checkpoints_list(cfg, checkpoints_parent_dir)

@@ -1,6 +1,12 @@
 import unittest
 import torch
 import numpy as np
+import sys
+import os
+
+# Add the parent directory to Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from models.model import Model
 from utils.data.dataholder import DataHolder
 
@@ -28,7 +34,7 @@ class TestModel(unittest.TestCase):
             "num_heads": 8,
             "dim_ffX": 512,
             "dim_ffy": 256,
-            "cell_image_dimensions": 512,
+            "cell_image_embedding_dim": 32,
             "output_features_to_pos_dims": 4
         }
         

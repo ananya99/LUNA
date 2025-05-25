@@ -45,6 +45,10 @@ def create_model_checkpoint_callbacks(cfg: omegaconf.DictConfig) -> list:
     
     callbacks = []
     
+    # Create checkpoints directory in the output path
+    checkpoint_dir = os.path.join(cfg.general.local_saved_path, "checkpoints")
+    os.makedirs(checkpoint_dir, exist_ok=True)
+    
     if cfg.validation.if_validate:
         assert cfg.dataset.validation_data_path is not None, "Validation data path is not provided."
         # Validation enabled: use specific validation settings
@@ -55,7 +59,7 @@ def create_model_checkpoint_callbacks(cfg: omegaconf.DictConfig) -> list:
 
         callbacks.append(
             ModelCheckpoint(
-                dirpath="checkpoints",
+                dirpath=checkpoint_dir,
                 filename="{epoch}",
                 monitor=monitor_metric,
                 save_top_k=save_top_k,
