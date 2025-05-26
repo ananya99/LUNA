@@ -52,9 +52,6 @@ model:
     cell_image_embedding_dim: 32
 distribute:
   gpus_per_node:
-  - 0
-  - 1
-  - 2
   - 3
 dataset:
   dataset_name: luna_with_cell_images

@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import os
 import pathlib
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 from yaml import safe_load
 import pytorch_lightning as pl
 from utils.diffusion_model.setup.setup import (
@@ -14,24 +14,16 @@ from utils.diffusion_model.setup.setup import (
     setup_model,
     setup_trainer,
 )
-from exp.config_utils import update_config
 
-@hydra.main(version_base="1.3", config_path="./exp", config_name="config")
-def main(cfg: DictConfig):   
+@hydra.main(version_base="1.3", config_path="./configs", config_name="config")
+def main(cfg: DictConfig):
     # Set seed for reproducibility
     set_seed(cfg.general.seed)
-    
     # Set output path for local saving
-    output_dir = (
+    cfg.general.local_saved_path = (
         hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
     )
-    print("output_dir", output_dir)
-    
-    cfg = update_config(cfg, output_dir=output_dir)
-    # # Save the final cfg configuration file
-    OmegaConf.save(cfg, output_dir + '/config.yaml')
-    print(f"Config saved to {output_dir}/config.yaml")
-    
+
     # Set up the dataset
     datamodule, dataset_infos = setup_dataset(cfg)
 
