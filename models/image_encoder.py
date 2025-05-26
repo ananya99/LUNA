@@ -67,7 +67,10 @@ class DINOv2Encoder(nn.Module):
         )
 
     def forward(self, x):
-        return self.mlp(self.model(self.transform(x)))
+        with torch.no_grad():
+            x = self.model(self.transform(x))
+        x = self.mlp(x)
+        return x
 
 class ImageEncoder(nn.Module):
     def __init__(self, hidden_dims, cell_image_encoder):

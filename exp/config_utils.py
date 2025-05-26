@@ -14,16 +14,16 @@ def update_config(cfg, output_dir, data_directory_name='train_test_split_1', dat
         datetime_str = now.strftime("%Y-%m-%d_%H:%M:%S")
     cfg.general.name = 'luna' +  '_' + datetime_str
 
-    cfg.distribute.gpus_per_node=[0,1,2,3]
-    cfg.general.wandb='disabled'
-    cfg.general.debug = True
+    cfg.distribute.gpus_per_node=[4,5,6,7]
+    # cfg.general.wandb='disabled'
+    # cfg.general.debug = True
 
     cfg.dataset.maximum_graph_size.train=500
     cfg.dataset.maximum_graph_size.test=500
     cfg.train.batch_size=4
     cfg.model.hidden_dims.cell_image_embedding_dim=32
     cfg.model.hidden_dims.num_heads=16
-    cfg.model.cell_image_encoder="DINOv2"
+    cfg.model.cell_image_encoder="CNN"
 
     # Use the setting to quickly check the model
     # cfg.validation.check_val_every_n_epochs=1

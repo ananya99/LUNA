@@ -17,13 +17,13 @@ test:
   test_save_parent_path: null
   checkpoint_name: all
 general:
-  name: luna_2025-05-25_22:35:26
-  wandb: disabled
+  name: luna_2025-05-25_23:10:19
+  wandb: online
   mode: train_and_test
   seed: 0
   enable_progress_bar: true
   local_saved_path: /mlbio_scratch/anagupta/luna/LUNA/exp
-  debug: true
+  debug: false
 train:
   n_epochs: 500
   batch_size: 4
@@ -34,7 +34,7 @@ model:
   n_layers: 8
   diffusion_noise_schedule: cosine
   diffusion_steps: 1000
-  cell_image_encoder: DINOv2
+  cell_image_encoder: CNN
   nu:
     p: 2
   hidden_mlp_dims:

@@ -16,24 +16,19 @@ from utils.diffusion_model.setup.setup import (
 )
 from exp.config_utils import update_config
 
-@hydra.main(version_base="1.3", config_path="./exp", config_name="config")
-def main(cfg: DictConfig):   
+@hydra.main(version_base="1.3", config_path="./configs", config_name="config")
+def main(cfg: DictConfig):
+    print("hello")
     # Set seed for reproducibility
     set_seed(cfg.general.seed)
-    
     # Set output path for local saving
-    output_dir = (
+    cfg.general.local_saved_path = (
         hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
     )
-    print("output_dir", output_dir)
-    
-    cfg = update_config(cfg, output_dir=output_dir)
-    # # Save the final cfg configuration file
-    OmegaConf.save(cfg, output_dir + '/config.yaml')
-    print(f"Config saved to {output_dir}/config.yaml")
-    
+
     # Set up the dataset
     datamodule, dataset_infos = setup_dataset(cfg)
+    print("dataset setup complete")
 
     # Run training or testing based on mode
     if cfg.general.mode == "train_and_test":
@@ -41,6 +36,42 @@ def main(cfg: DictConfig):
         test_model(cfg, datamodule, dataset_infos)
     elif cfg.general.mode == "test_only":
         test_model(cfg, datamodule, dataset_infos)
+
+# @hydra.main(version_base="1.3", config_path="/mlbio_scratch/anagupta/luna/outputs/2025-05-25/23-20-51", config_name="config")
+# def main(cfg: DictConfig):   
+#     # Set seed for reproducibility
+#     set_seed(cfg.general.seed)
+    
+#     # Set output path for local saving
+#     # output_dir = (
+#     #     hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+#     # )
+#     # print("output_dir", output_dir)
+    
+#     # cfg = update_config(cfg, output_dir=output_dir)
+#     # # # Save the final cfg configuration file
+#     # OmegaConf.save(cfg, output_dir + '/config.yaml')
+#     # print(f"Config saved to {output_dir}/config.yaml")
+    
+#     # cfg.general.name = 'luna_cnn_test_only' # the name of the experiment
+#     # cfg.general.mode = 'test_only' # the mode of the experiment
+
+#     # cfg.test.save_dir = '/mlbio_scratch/anagupta/luna/outputs/2025-05-25/23-20-51/test_results' # the path to save the test results
+#     # cfg.test.checkpoints_parent_dir = '/mlbio_scratch/anagupta/luna/outputs/2025-05-25/23-20-51/checkpoints' # the path to the parent directory of the checkpoints
+#     # cfg.test.checkpoint_name = ['epoch=249.ckpt', 'epoch=499.ckpt']
+    
+#     # cfg.model.cell_image_encoder = 'CNN'
+#     print(cfg)
+    
+#     # Set up the dataset
+#     datamodule, dataset_infos = setup_dataset(cfg)
+
+#     # Run training or testing based on mode
+#     if cfg.general.mode == "train_and_test":
+#         train_model(cfg, datamodule, dataset_infos)
+#         test_model(cfg, datamodule, dataset_infos)
+#     elif cfg.general.mode == "test_only":
+#         test_model(cfg, datamodule, dataset_infos)
 
 
 def set_seed(seed: int):
@@ -110,13 +141,15 @@ def test_single_checkpoint(
         return
     print("Epoch index:", cfg.test.epoch_index)
 
-    if cfg.general.mode == "test_only":
-        load_model_config(cfg, checkpoint_path)
+    # if cfg.general.mode == "test_only":
+    #     print("Loading model config...")
+    #     load_model_config(cfg, checkpoint_path)
 
     model = setup_model(cfg, dataset_infos, checkpoint_path=checkpoint_path)
     callbacks = setup_callbacks(cfg, datamodule)
     trainer = setup_trainer(cfg, callbacks)
 
+    print("Testing model...cfg.model.cell_image_encoder", cfg.model.cell_image_encoder)
     trainer.test(model, ckpt_path=checkpoint_path, dataloaders=dataloader_test)
 
 

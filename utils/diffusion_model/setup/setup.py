@@ -127,11 +127,12 @@ def setup_model(
     Returns:
     model: Initialized model based on the provided configuration.
     """
-    if cfg.general.mode == "train_and_test":
-        pass
-    else:
-        # Set up for testing only
-        cfg, _ = get_resume(cfg, dataset_infos, checkpoint_path)
+    # if cfg.general.mode == "train_and_test":
+    #     pass
+    # else:
+    #     # Set up for testing only
+    #     # cfg, _ = get_resume(cfg, dataset_infos, checkpoint_path)
+    #     print("cfg in setup_model", cfg)
 
     # Initialize the model
     model = FullDenoisingDiffusion(cfg=cfg, dataset_infos=dataset_infos)
