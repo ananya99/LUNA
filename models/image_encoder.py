@@ -57,6 +57,8 @@ class DINOv2Encoder(nn.Module):
         )
         
         self.model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14')
+        for param in self.model.parameters():
+            param.requires_grad = False  # freeze DINOv2 weights
         self.model.eval()
         
         # Add an mlp layer to reduce the dimensionality to the desired hidden_dims
@@ -67,7 +69,10 @@ class DINOv2Encoder(nn.Module):
         )
 
     def forward(self, x):
-        return self.mlp(self.model(self.transform(x)))
+        x = self.transform(x)
+        with torch.no_grad():  # don't compute gradients through DINO
+            feats = self.model(x)  # returns [B, 384] by default for dinov2_vits14
+        return self.mlp(feats)
 
 class ImageEncoder(nn.Module):
     def __init__(self, hidden_dims, cell_image_encoder):

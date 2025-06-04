@@ -260,7 +260,7 @@ class DataModule(AbstractDataModule):
     
     def cell_images_loading(self, cfg: omegaconf.DictConfig, split) -> np.ndarray:
         """
-        Load the cell images from the specified path or generate mock images in debug mode.
+        Load the cell images from the specified path or generate mock images in use_mock_images mode.
         Args:
             cfg: Configuration object containing dataset paths.
             split: The split of the dataset ('train', 'validation', 'test').
@@ -272,8 +272,8 @@ class DataModule(AbstractDataModule):
             print("No cell images path provided. Running without cell images.")
             return None
 
-        # Generate mock images (128x128 zero images) for all cells in debug mode
-        if cfg.general.debug:
+        # Generate mock images (128x128 zero images) for all cells in use_mock_images mode
+        if cfg.general.use_mock_images:
             data_path = (
                 cfg.dataset.train_data_path if split == 'train' else
                 cfg.dataset.validation_data_path if split == 'validation' else
@@ -281,7 +281,7 @@ class DataModule(AbstractDataModule):
             )
             data = pd.read_csv(f"{data_path}", index_col=0)
             num_cells = data.shape[0]
-            print(f"Debug mode enabled. Generating {num_cells} mock images.")
+            print(f"use_mock_images mode enabled. Generating {num_cells} mock images.")
             return np.zeros((num_cells, 128, 128), dtype=np.float32)
         
         if split == 'train':

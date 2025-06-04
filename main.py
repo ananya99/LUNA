@@ -20,9 +20,9 @@ def main(cfg: DictConfig):
     # Set seed for reproducibility
     set_seed(cfg.general.seed)
     # Set output path for local saving
-    cfg.general.local_saved_path = (
-        hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
-    )
+    # cfg.general.local_saved_path = (
+    #     hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+    # )
 
     # Set up the dataset
     datamodule, dataset_infos = setup_dataset(cfg)
