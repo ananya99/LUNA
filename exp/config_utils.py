@@ -15,8 +15,8 @@ def update_config(cfg, output_dir, data_directory_name='train_test_split_1', nam
         name = now.strftime("%Y-%m-%d_%H:%M:%S")
     cfg.general.name = 'luna' +  '_' + name
 
-    cfg.distribute.gpus_per_node=[5,6]
-    # cfg.general.use_mock_images = True
+    cfg.distribute.gpus_per_node=[3,4]
+    cfg.general.mock_data_for_debugging = True
 
     cfg.dataset.maximum_graph_size.train=500
     # cfg.dataset.maximum_graph_size.test=2000
@@ -50,10 +50,14 @@ def update_config(cfg, output_dir, data_directory_name='train_test_split_1', nam
     cfg.dataset.train_data_path = data_directory + '/train_data.csv' 
     cfg.dataset.test_data_path = data_directory + '/test_data.csv' 
     # cfg.dataset.slice_images_path = data_directory + '/slice_images' 
+    
+    cfg.dataset.cell_image_embeddings_path = '/mlbio_scratch/wen2/scMAE/xenium_preprocessed_indomain'
     # cfg.dataset.train_cell_images_path = data_directory + '/train_cell_images' 
     # cfg.dataset.test_cell_images_path = data_directory + '/test_cell_images' 
 
-    if cfg.dataset.train_cell_images_path:
+    if cfg.dataset.cell_image_embeddings_path:
+        cfg.dataset.dataset_name = 'luna_mae_embeddings'
+    elif cfg.dataset.train_cell_images_path:
         cfg.dataset.dataset_name = 'luna' + '_' + cfg.model.cell_image_encoder
     else:
         cfg.dataset.dataset_name = 'luna_baseline'
@@ -65,8 +69,9 @@ if __name__ == "__main__":
     
     # get arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument("--name", type=str, default='')
-    parser.add_argument("--debug", type=bool, default=False)
+    parser.add_argument('--name', type=str, help='Name of the configuration')
+    parser.add_argument('--debug', action='store_true', help='Enable debug mode')
+    parser.add_argument('--model', type=str, default='baseline', help='Model to use')
     args = parser.parse_args()
 
     initialize(config_path="../configs") 

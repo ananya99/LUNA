@@ -75,43 +75,29 @@ class DINOv2Encoder(nn.Module):
         return self.mlp(feats)
 
 class ImageEncoder(nn.Module):
-    def __init__(self, hidden_dims, cell_image_encoder):
+    def __init__(self, output_dims, cell_image_encoder):
         super(ImageEncoder, self).__init__()
         self.cell_image_encoder = cell_image_encoder
         
         if cell_image_encoder == "CNN":
-            self.encoder = CNNEncoder(hidden_dims)
+            self.encoder = CNNEncoder(output_dims)
         elif cell_image_encoder == "DINOv2":
-            self.encoder = DINOv2Encoder(hidden_dims)
+            self.encoder = DINOv2Encoder(output_dims)
         else:
             raise AttributeError(f"Cell image encoder {cell_image_encoder} not found")
             
     def forward(self, x):
         return self.encoder(x)
-
-# self.encoder2 = nn.Sequential(
-#     nn.Conv2d(1, 32, 3, 2, 1),  # 128 -> 64
-#     nn.BatchNorm2d(32),
-#     nn.ReLU(),
     
-#     nn.Conv2d(32, 64, 3, 2, 1),  # 64 -> 32
-#     nn.BatchNorm2d(64),
-#     nn.ReLU(),
-
-#     nn.Conv2d(64, 128, 3, 2, 1),  # 32 -> 16
-#     nn.BatchNorm2d(128),
-#     nn.ReLU(),
-
-#     nn.AdaptiveAvgPool2d((1, 1)),  # spatial -> (1,1)
-#     nn.Flatten(),
-#     nn.Linear(128, hidden_dims["cell_image_embedding_dim"])
-# )
-
-# encoder3
-# from torchvision.models.vision_transformer import vit_b_16
-
-# vit = vit_b_16(weights=None)
-# vit.conv_proj = nn.Conv2d(1, vit.conv_proj.out_channels, kernel_size=16, stride=16)
-# vit.heads = nn.Linear(vit.heads.in_features, hidden_dims["cell_image_embedding_dim"])
-
-# self.encoder = vit
+class ImageEmbeddingMLP(nn.Module):
+    def __init__(self, input_dims = 768, hidden_dims = 128, output_dims = 32):
+        super(ImageEmbeddingMLP, self).__init__()
+        self.mlp = nn.Sequential(
+            nn.Linear(input_dims, hidden_dims),
+            nn.ReLU(),
+            nn.Linear(hidden_dims, output_dims),
+            nn.ReLU()
+        )
+        
+    def forward(self, x):
+        return self.mlp(x)

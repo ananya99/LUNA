@@ -1,11 +1,18 @@
 import torch.nn as nn
 
-from models.image_encoder import ImageEncoder
+from models.image_encoder import ImageEncoder, ImageEmbeddingMLP
 from models.layers import PositionsMLP
 from models.transformer import TransformerLayer
 from utils.data.dataholder import DataHolder
 import torch
 
+def determine_content_type(cell_images):
+    if len(cell_images.shape) == 4 and cell_images.shape[2] == 128 and cell_images.shape[3] == 128:
+        return "image"
+    elif len(cell_images.shape) == 3 and cell_images.shape[2] == 768:
+        return "embedding"
+    else:
+        raise ValueError(f"Unknown cell image type: {cell_images.shape}")
 
 class Model(nn.Module):
     """
@@ -82,7 +89,8 @@ class Model(nn.Module):
         # MLP for processing input positions
         self.mlp_in_position = PositionsMLP(hidden_mlp_dims["pos"])
 
-        self.encoder = ImageEncoder(hidden_dims["cell_image_embedding_dim"], self.cell_image_encoder)
+        self.image_encoder = ImageEncoder(hidden_dims["cell_image_embedding_dim"], self.cell_image_encoder)
+        self.image_embedding_mlp = ImageEmbeddingMLP(output_dims=hidden_dims["cell_image_embedding_dim"])
 
         # List of TransformerLayer instances
         self.transformer_layers = nn.ModuleList(
@@ -133,15 +141,22 @@ class Model(nn.Module):
         node_features = data.node_features
         diffusion_time = data.diffusion_time
         positions = data.positions
-        cell_images = data.cell_images if data.cell_images is not None else None
+        cell_images = data.cell_images
 
         # Process cell images through encoder if they exist
         if cell_images is not None:
-            batch_size, num_cells = cell_images.shape[0], cell_images.shape[1]
-            cell_images = cell_images.view(batch_size * num_cells, 1, 128, 128)
-            cell_images_encoded = self.encoder(cell_images)
-            cell_images_encoded = cell_images_encoded.view(batch_size, num_cells, -1)
-            # print("\nEncoded cell images shape:", cell_images_encoded.shape)
+            content_type = determine_content_type(cell_images)
+            if content_type == "image":
+                # print("[INFO] Encoding cell images as images")
+                batch_size, num_cells = cell_images.shape[0], cell_images.shape[1]
+                cell_images = cell_images.view(batch_size * num_cells, 1, 128, 128)
+                cell_images_encoded = self.image_encoder(cell_images)
+                cell_images_encoded = cell_images_encoded.view(batch_size, num_cells, -1)
+            elif content_type == "embedding":
+                # print("[INFO] Already encoded cell images as embeddings")
+                cell_images_encoded = self.image_embedding_mlp(cell_images)
+            else:
+                raise ValueError(f"Unknown cell image type: {content_type}")
 
         add_diffusion_time_to_out = diffusion_time[
             ..., : self.output_dimensions_diffusion_time

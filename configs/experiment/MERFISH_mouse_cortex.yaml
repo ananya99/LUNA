@@ -15,6 +15,7 @@ dataset:
     slice_images_path: null # Change this to the path of the slice images
     train_cell_images_path: null # Change this to the path of the training cell images
     test_cell_images_path: null # Change this to the path of the test cell images
+    cell_image_embeddings_path: null # path to the embedding files
     validation_data_path: null # path to the validation dataset
     maximum_graph_size: # Configuration for maximum graph sizes during different stages (optional)
         train: null   # No downsampling; Set maximum size of the graph sampled during training to accommodate GPU memory constraints.

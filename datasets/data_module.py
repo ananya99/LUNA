@@ -20,6 +20,7 @@ import tarfile
 import os
 from PIL import Image
 from io import BytesIO
+import concurrent.futures
 
 
 class Dataset(InMemoryDataset):
@@ -113,9 +114,7 @@ class Dataset(InMemoryDataset):
         self._data.node_features = clean_node_features
         self._data.cell_class = clean_cell_class
         self._data.cell_ID = cell_ID
-        self._data.cell_images = torch.from_numpy(
-            np.array(cell_images, dtype=np.float32)
-        ) if cell_images is not None else None
+        self._data.cell_images = cell_images if cell_images is not None else None
 
         num_cell_to_region_mapping_dict = self._create_region_mapping_dict()
         self.statistics = Statistics(
@@ -258,6 +257,16 @@ class DataModule(AbstractDataModule):
         
         return data
     
+    def get_num_cells(self, cfg: omegaconf.DictConfig, split):
+        data_path = (
+            cfg.dataset.train_data_path if split == 'train' else
+            cfg.dataset.validation_data_path if split == 'validation' else
+            cfg.dataset.test_data_path
+        )
+        data = pd.read_csv(f"{data_path}", index_col=0)
+        num_cells = data.shape[0]
+        return num_cells
+    
     def cell_images_loading(self, cfg: omegaconf.DictConfig, split) -> np.ndarray:
         """
         Load the cell images from the specified path or generate mock images in use_mock_images mode.
@@ -268,20 +277,34 @@ class DataModule(AbstractDataModule):
             np.ndarray: Array of loaded or mock cell images.
         """
         
+        if cfg.dataset.cell_image_embeddings_path is not None and cfg.dataset.train_cell_images_path is not None:
+            raise ValueError("Both cell_image_embeddings_path and train_cell_images_path are provided. Please provide only one.")
+        
+        if cfg.dataset.cell_image_embeddings_path is not None:
+            
+            if cfg.general.mock_data_for_debugging:
+                num_cells = self.get_num_cells(cfg, split)
+                print(f"[INFO] mock_data_for_debugging mode enabled. Generating {num_cells} mock cell image embeddings.")
+                return torch.zeros((num_cells, 768), dtype=torch.float32)
+            
+            pt_files = os.listdir(cfg.dataset.cell_image_embeddings_path)
+            file_paths = [os.path.join(cfg.dataset.cell_image_embeddings_path, file) for file in pt_files]
+            
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                embeddings = list(executor.map(lambda x: torch.load(x, map_location="cpu"), file_paths))
+                
+            print("[INFO] Loaded all cell image embeddings from", cfg.dataset.cell_image_embeddings_path)
+            
+            return torch.stack(embeddings)
+        
         if cfg.dataset.train_cell_images_path is None or cfg.dataset.test_cell_images_path is None:
-            print("No cell images path provided. Running without cell images.")
+            print("[INFO] No cell images path provided. Running without cell images.")
             return None
 
         # Generate mock images (128x128 zero images) for all cells in use_mock_images mode
-        if cfg.general.use_mock_images:
-            data_path = (
-                cfg.dataset.train_data_path if split == 'train' else
-                cfg.dataset.validation_data_path if split == 'validation' else
-                cfg.dataset.test_data_path
-            )
-            data = pd.read_csv(f"{data_path}", index_col=0)
-            num_cells = data.shape[0]
-            print(f"use_mock_images mode enabled. Generating {num_cells} mock images.")
+        if cfg.general.mock_data_for_debugging:
+            num_cells = self.get_num_cells(cfg, split)
+            print(f"[INFO] mock_data_for_debugging mode enabled. Generating {num_cells} mock images.")
             return np.zeros((num_cells, 128, 128), dtype=np.float32)
         
         if split == 'train':
@@ -316,8 +339,8 @@ class DataModule(AbstractDataModule):
                                 image_array = np.load(BytesIO(image_data))
                                 all_images[current_idx] = image_array
                                 current_idx += 1
-                print(f"Loaded {current_idx}/{total_images} images from {tar_file_path}")
-            print(f"Finished loading images from {cell_images_path}")
+                print(f"[INFO] Loaded {current_idx}/{total_images} images from {tar_file_path}")
+            print(f"[INFO] Finished loading all images from {cell_images_path}")
         return all_images
 
 
