@@ -79,19 +79,24 @@ class ImageEncoder(nn.Module):
         super(ImageEncoder, self).__init__()
         self.cell_image_encoder = cell_image_encoder
         
-        if cell_image_encoder == "CNN":
+        if cell_image_encoder is None:
+            print("No cell image encoder")
+            pass
+        elif cell_image_encoder == "CNN":
             self.encoder = CNNEncoder(output_dims)
         elif cell_image_encoder == "DINOv2":
             self.encoder = DINOv2Encoder(output_dims)
+        elif cell_image_encoder == "MAE_embeddings":
+            self.encoder = MAEEmbeddingsMLP(output_dims)
         else:
-            raise AttributeError(f"Cell image encoder {cell_image_encoder} not found")
+            raise AttributeError(f"Invalid cell image encoder: {cell_image_encoder}")
             
     def forward(self, x):
         return self.encoder(x)
     
-class ImageEmbeddingMLP(nn.Module):
+class MAEEmbeddingsMLP(nn.Module):
     def __init__(self, input_dims = 768, hidden_dims = 128, output_dims = 32):
-        super(ImageEmbeddingMLP, self).__init__()
+        super(MAEEmbeddingsMLP, self).__init__()
         self.mlp = nn.Sequential(
             nn.Linear(input_dims, hidden_dims),
             nn.ReLU(),

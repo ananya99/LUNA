@@ -1,3 +1,4 @@
+from typing import Dict
 import numpy as np
 import omegaconf
 import pandas as pd
@@ -190,10 +191,25 @@ class Dataset(InMemoryDataset):
 
 class DataModule(AbstractDataModule):
     def __init__(self, cfg):
-        train_data = self.data_loading(cfg, 'train')
-        test_data = self.data_loading(cfg, 'test')
-        self.train_dataset = self._initialize_dataset("train", train_data, self.cell_images_loading(cfg, 'train'), cfg)
-        self.test_dataset = self._initialize_dataset("test", test_data, self.cell_images_loading(cfg, 'test'), cfg)
+        train_data, train_num_cells = self.data_loading(cfg, 'train')
+        test_data, test_num_cells = self.data_loading(cfg, 'test')
+        
+        if cfg.dataset.train_cell_image_embeddings_path is not None and cfg.dataset.train_cell_images_path is not None:
+            raise ValueError("Both train_cell_image_embeddings_path and train_cell_images_path are provided. Please provide only one.")
+        
+        train_cell_images_or_embeddings = None
+        test_cell_images_or_embeddings = None
+        
+        if cfg.dataset.train_cell_image_embeddings_path is not None:
+            train_cell_images_or_embeddings = self.load_cell_image_embeddings(cfg, 'train', train_num_cells)
+            test_cell_images_or_embeddings = self.load_cell_image_embeddings(cfg, 'test', test_num_cells)
+        
+        if cfg.dataset.train_cell_images_path is not None:
+            train_cell_images_or_embeddings = self.load_cell_images(cfg, 'train', train_num_cells)
+            test_cell_images_or_embeddings = self.load_cell_images(cfg, 'test', test_num_cells)
+            
+        self.train_dataset = self._initialize_dataset("train", train_data, train_cell_images_or_embeddings, cfg)
+        self.test_dataset = self._initialize_dataset("test", test_data, test_cell_images_or_embeddings, cfg)
 
         if cfg.dataset.validation_data_path:
             validation_data = self.data_loading(cfg, 'validation')
@@ -213,9 +229,45 @@ class DataModule(AbstractDataModule):
             val_dataset=self.validation_dataset if self.validation_dataset else None,
             test_dataset=self.test_dataset,
         )
+        
+    def process_cell_images_or_embeddings(self, cell_images_or_embeddings, data):
+        if isinstance(cell_images_or_embeddings, dict):
+            print("cell_images_or_embeddings is a dict")
 
-    def _initialize_dataset(self, split, data, cell_images, cfg):
-        return Dataset(split=split, input_data=data, cell_images=cell_images, cfg=cfg)
+            # Ensure index values are string/int compatible with dict keys
+            cell_ids = data.index.values
+            present_mask = np.isin(cell_ids, list(cell_images_or_embeddings.keys()))
+            
+            if not present_mask.all():
+                missing = cell_ids[~present_mask]
+                print(f"[WARNING] {len(missing)} cell_ids missing in image dict. Ignoring them.")
+
+            filtered_ids = cell_ids[present_mask]
+
+            # Stack the tensors in the correct order
+            try:
+                cell_images_tensor = torch.stack([cell_images_or_embeddings[cid] for cid in filtered_ids])
+            except Exception as e:
+                raise ValueError(f"Error stacking tensors for IDs: {filtered_ids[:5]}...") from e
+
+            # Filter the DataFrame
+            data = data[present_mask].reset_index(drop=True)
+
+        elif isinstance(cell_images_or_embeddings, torch.Tensor):
+            print("cell_images_or_embeddings is a tensor (mock images or embeddings)")
+            cell_images_tensor = cell_images_or_embeddings
+
+        else:
+            raise ValueError(f"Invalid cell images type: {type(cell_images_or_embeddings)}")
+
+        return cell_images_tensor
+
+    def _initialize_dataset(self, split, data, cell_images_or_embeddings, cfg):
+        if cfg.model.cell_image_encoder is None:
+            return Dataset(split=split, input_data=data, cfg=cfg)
+        
+        cell_images_tensor = self.process_cell_images_or_embeddings(cell_images_or_embeddings, data)
+        return Dataset(split=split, input_data=data, cell_images=cell_images_tensor, cfg=cfg)
 
     def collate(self, batch):
         return self._create_batch(batch)
@@ -255,57 +307,22 @@ class DataModule(AbstractDataModule):
         # data = standardise_dataframe_colnames(data)
         assert all(column in data.columns for column in ['coord_X', 'coord_Y', 'cell_section', 'cell_class'])
         
-        return data
+        return data, data.shape[0]
     
-    def get_num_cells(self, cfg: omegaconf.DictConfig, split):
-        data_path = (
-            cfg.dataset.train_data_path if split == 'train' else
-            cfg.dataset.validation_data_path if split == 'validation' else
-            cfg.dataset.test_data_path
-        )
-        data = pd.read_csv(f"{data_path}", index_col=0)
-        num_cells = data.shape[0]
-        return num_cells
-    
-    def cell_images_loading(self, cfg: omegaconf.DictConfig, split) -> np.ndarray:
+    def load_cell_images(self, cfg: omegaconf.DictConfig, split, num_cells) -> Dict[str, torch.Tensor]:
         """
-        Load the cell images from the specified path or generate mock images in use_mock_images mode.
+        Load the cell images from the specified path or generate mock images in mock_data_for_debugging mode.
         Args:
             cfg: Configuration object containing dataset paths.
             split: The split of the dataset ('train', 'validation', 'test').
         Returns:
-            np.ndarray: Array of loaded or mock cell images.
+            torch.Tensor: Array of loaded or mock cell images.
         """
         
-        if cfg.dataset.cell_image_embeddings_path is not None and cfg.dataset.train_cell_images_path is not None:
-            raise ValueError("Both cell_image_embeddings_path and train_cell_images_path are provided. Please provide only one.")
-        
-        if cfg.dataset.cell_image_embeddings_path is not None:
-            
-            if cfg.general.mock_data_for_debugging:
-                num_cells = self.get_num_cells(cfg, split)
-                print(f"[INFO] mock_data_for_debugging mode enabled. Generating {num_cells} mock cell image embeddings.")
-                return torch.zeros((num_cells, 768), dtype=torch.float32)
-            
-            pt_files = os.listdir(cfg.dataset.cell_image_embeddings_path)
-            file_paths = [os.path.join(cfg.dataset.cell_image_embeddings_path, file) for file in pt_files]
-            
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                embeddings = list(executor.map(lambda x: torch.load(x, map_location="cpu"), file_paths))
-                
-            print("[INFO] Loaded all cell image embeddings from", cfg.dataset.cell_image_embeddings_path)
-            
-            return torch.stack(embeddings)
-        
-        if cfg.dataset.train_cell_images_path is None or cfg.dataset.test_cell_images_path is None:
-            print("[INFO] No cell images path provided. Running without cell images.")
-            return None
-
-        # Generate mock images (128x128 zero images) for all cells in use_mock_images mode
+        # Generate mock images (128x128 zero images) for all cells in mock_data_for_debugging mode
         if cfg.general.mock_data_for_debugging:
-            num_cells = self.get_num_cells(cfg, split)
             print(f"[INFO] mock_data_for_debugging mode enabled. Generating {num_cells} mock images.")
-            return np.zeros((num_cells, 128, 128), dtype=np.float32)
+            return torch.zeros((num_cells, 128, 128), dtype=torch.float32)
         
         if split == 'train':
             cell_images_path = cfg.dataset.train_cell_images_path
@@ -313,35 +330,59 @@ class DataModule(AbstractDataModule):
             cell_images_path = cfg.dataset.validation_cell_images_path
         else:
             cell_images_path = cfg.dataset.test_cell_images_path
+            
+        print(f"[INFO] Loading {split} cell images from {cell_images_path}")
         
-        # First count total number of images
-        total_images = 0
-        for root, dirs, files in os.walk(cell_images_path):
-            for file in files:
-                if file.endswith('.tar'):
-                    with tarfile.open(os.path.join(root, file), 'r') as tar:
-                        total_images += sum(1 for tarinfo in tar if tarinfo.name.endswith('.npy'))
-        
-        # Pre-allocate numpy array
-        all_images = np.zeros((total_images, 128, 128), dtype=np.float32)
-        current_idx = 0
-        
-        # Load images into pre-allocated array
-        for root, dirs, files in os.walk(cell_images_path):
+        all_images = {}
+
+        # Traverse all .tar files and extract .npy images into a dict
+        for root, _, files in os.walk(cell_images_path):
             for file in files:
                 if file.endswith('.tar'):
                     tar_file_path = os.path.join(root, file)
                     with tarfile.open(tar_file_path, 'r') as tar:
                         for tarinfo in tar:
                             if tarinfo.name.endswith('.npy'):
+                                cell_id = os.path.basename(tarinfo.name).replace('.npy', '')
                                 file_obj = tar.extractfile(tarinfo)
-                                image_data = file_obj.read()
-                                image_array = np.load(BytesIO(image_data))
-                                all_images[current_idx] = image_array
-                                current_idx += 1
-                print(f"[INFO] Loaded {current_idx}/{total_images} images from {tar_file_path}")
-            print(f"[INFO] Finished loading all images from {cell_images_path}")
+                                if file_obj is not None:
+                                    image_data = file_obj.read()
+                                    np_image = np.load(BytesIO(image_data)).astype(np.float32)
+                                    tensor_image = torch.from_numpy(np_image)
+                                    all_images[cell_id] = tensor_image
+
+                    print(f"[INFO] Finished extracting from {tar_file_path}, total images so far: {len(all_images)}")
+
+        print(f"[INFO] Finished loading {len(all_images)} images for split '{split}'.")
         return all_images
+    
+    def load_cell_image_embeddings(self, cfg: omegaconf.DictConfig, split, num_cells) -> Dict[str, torch.Tensor]:
+        """
+        Load the cell image embeddings from the specified path or generate mock embeddings in mock_data_for_debugging mode.
+        Args:
+            cfg: Configuration object containing dataset paths.
+            split: The split of the dataset ('train', 'validation', 'test').
+        Returns:
+            torch.Tensor: Array of loaded or mock cell image embeddings.
+        """
+        
+        if cfg.general.mock_data_for_debugging:
+            print(f"[INFO] mock_data_for_debugging mode enabled. Generating {num_cells} mock cell image embeddings.")
+            return torch.zeros((num_cells, 768), dtype=torch.float32)
+        
+        if split == 'train':
+            cell_image_embeddings_path = cfg.dataset.train_cell_image_embeddings_path
+        elif split == 'validation':
+            cell_image_embeddings_path = cfg.dataset.validation_cell_image_embeddings_path
+        else:
+            cell_image_embeddings_path = cfg.dataset.test_cell_image_embeddings_path
+        
+        # Load entire preprocessed dict
+        print(f"[INFO] Loading preprocessed {split} embeddings from: {cell_image_embeddings_path}")
+        embeddings_dict = torch.load(cell_image_embeddings_path, map_location="cpu")
+            
+        print(f"[INFO] Loaded all {split} cell image embeddings from {cell_image_embeddings_path}")
+        return embeddings_dict
 
 
 class Infos(AbstractDatasetInfos):

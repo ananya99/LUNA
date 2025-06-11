@@ -1,7 +1,7 @@
 n_layers: 8 # Number of transformer layers
 diffusion_noise_schedule: cosine # noise schedule for diffusion time
 diffusion_steps: 1000 # number of diffusion steps
-cell_image_encoder: DINOv2 # encoder for the cell images
+cell_image_encoder: null # encoder for the cell images
 nu:
     p: 2
 hidden_mlp_dims:

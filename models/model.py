@@ -1,6 +1,6 @@
 import torch.nn as nn
 
-from models.image_encoder import ImageEncoder, ImageEmbeddingMLP
+from models.image_encoder import ImageEncoder
 from models.layers import PositionsMLP
 from models.transformer import TransformerLayer
 from utils.data.dataholder import DataHolder
@@ -90,7 +90,6 @@ class Model(nn.Module):
         self.mlp_in_position = PositionsMLP(hidden_mlp_dims["pos"])
 
         self.image_encoder = ImageEncoder(hidden_dims["cell_image_embedding_dim"], self.cell_image_encoder)
-        self.image_embedding_mlp = ImageEmbeddingMLP(output_dims=hidden_dims["cell_image_embedding_dim"])
 
         # List of TransformerLayer instances
         self.transformer_layers = nn.ModuleList(
@@ -154,7 +153,7 @@ class Model(nn.Module):
                 cell_images_encoded = cell_images_encoded.view(batch_size, num_cells, -1)
             elif content_type == "embedding":
                 # print("[INFO] Already encoded cell images as embeddings")
-                cell_images_encoded = self.image_embedding_mlp(cell_images)
+                cell_images_encoded = self.image_encoder(cell_images)
             else:
                 raise ValueError(f"Unknown cell image type: {content_type}")
 
@@ -208,4 +207,3 @@ class Model(nn.Module):
         ).mask()
 
         return out
-
