@@ -29,7 +29,6 @@ def main(cfg: DictConfig):
 
     # Run training or testing based on mode
     if cfg.general.mode == "train_and_test":
-        print("Training the model")
         train_model(cfg, datamodule, dataset_infos)
         test_model(cfg, datamodule, dataset_infos)
     elif cfg.general.mode == "test_only":

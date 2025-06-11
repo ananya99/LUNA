@@ -87,7 +87,7 @@ class ImageEncoder(nn.Module):
         elif cell_image_encoder == "DINOv2":
             self.encoder = DINOv2Encoder(output_dims)
         elif cell_image_encoder == "MAE_embeddings":
-            self.encoder = MAEEmbeddingsMLP(output_dims)
+            self.encoder = MAEEmbeddingsMLP(output_dims=output_dims)
         else:
             raise AttributeError(f"Invalid cell image encoder: {cell_image_encoder}")
             

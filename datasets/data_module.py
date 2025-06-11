@@ -69,6 +69,11 @@ class Dataset(InMemoryDataset):
         clean_positions, clean_node_features, clean_cell_class = self._clean_data(
             positions, node_features, cell_class, nan_rows
         )
+        
+        # Also clean the input_data to match the cleaned tensors
+        # Convert torch boolean tensor to numpy for pandas indexing
+        nan_rows_np = nan_rows.numpy()
+        self.input_data_cleaned = self.input_data[~nan_rows_np].reset_index(drop=True)
 
         # Update data attributes
         self._update_data_attributes(
@@ -154,7 +159,8 @@ class Dataset(InMemoryDataset):
         }
 
     def _generate_slice_indices(self):
-        slices = self.input_data["cell_section"].values
+        # Use cleaned data for slice generation to avoid index mismatches
+        slices = self.input_data_cleaned["cell_section"].values
         current_slice, slice_start, slice_ = slices[0], 0, []
 
         for i in range(1, len(slices)):
@@ -178,6 +184,19 @@ class Dataset(InMemoryDataset):
         print(self.split)
         print(self.maximum_graph_size)
         print(np.unique(slice_))
+
+        # Debug: Print data information
+        print(f"DEBUG - Split: {self.split}")
+        print(f"DEBUG - Original data shape: {self.input_data.shape}")
+        print(f"DEBUG - Cleaned data shape: {self.input_data_cleaned.shape}")
+        print(f"DEBUG - Number of unique slices: {len(np.unique(slice_))}")
+        print(f"DEBUG - Max slice index: {max(slice_) if slice_ else 'No slices'}")
+        print(f"DEBUG - Cleaned data size: {len(self.input_data_cleaned)}")
+        if hasattr(self, '_data'):
+            if hasattr(self._data, 'node_features') and self._data.node_features is not None:
+                print(f"DEBUG - Node features size: {self._data.node_features.shape}")
+            if hasattr(self._data, 'positions') and self._data.positions is not None:
+                print(f"DEBUG - Positions size: {self._data.positions.shape}")
 
         # Slice cell_images based on the generated indices
         if self.cell_images is not None:

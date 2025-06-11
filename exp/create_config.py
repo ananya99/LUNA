@@ -10,7 +10,7 @@ import pytz
 
 all_outputs_dir ='/mlbio_scratch/anagupta/luna/runs'
 
-def create_and_save_config(name='', mode='baseline', debug=False, gpus=[5,6,7], data_dir='train_test_split_1'):
+def create_and_save_config(name='', mode='baseline', debug=False, gpus=[5,6,7], data_dir='data/train_test_split_1'):
     date_str = datetime.now().strftime("%Y-%m-%d")
     time_str = datetime.now().strftime("%H-%M-%S")
         
@@ -57,7 +57,7 @@ def create_and_save_config(name='', mode='baseline', debug=False, gpus=[5,6,7], 
     if not os.path.exists(cfg.test.save_dir):
         os.makedirs(cfg.test.save_dir)
 
-    data_directory = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data', data_dir)
+    data_directory = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), data_dir)
     if not os.path.exists(data_directory):
         raise FileNotFoundError(f"Data directory {data_directory} does not exist")
     
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     parser.add_argument('--debug', action='store_true', help='Enable debug mode')
     parser.add_argument('--mode', type=str, default='baseline', help='Mode to use, options: baseline, cnn, dinov2, mae, embed')
     parser.add_argument('--gpus', type=int, nargs='+', default=[5,6,7], help='GPUs to use, Pass as integers separated by spaces')
-    parser.add_argument('--data_dir', type=str, default='train_test_split_1', help='Name of the data directory inside "/mlbio_scratch/anagupta/luna/data"')
+    parser.add_argument('--data_dir', type=str, default='data/train_test_split_1', help='data directory relative to "/mlbio_scratch/anagupta/luna/"')
     args = parser.parse_args()
     
     create_and_save_config(name=args.name, mode=args.mode, debug=args.debug, gpus=args.gpus, data_dir=args.data_dir)

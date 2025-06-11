@@ -6,6 +6,7 @@ b=$(python3 /mlbio_scratch/anagupta/luna/LUNA/exp/create_config.py "$@") || { ec
 echo "[run.sh] Config created at: $b"
 
 # Run main.py with output from create_config.py
-echo "[run.sh] Running main.py with args: --config-path=$b > $b/output.log"
+echo "[run.sh] Running main.py"
+echo "[run.sh] Output log: $b/output.log"
 python3 /mlbio_scratch/anagupta/luna/LUNA/main.py "--config-path=$b" > "$b/output.log"
 echo "[run.sh] Done!!!"
