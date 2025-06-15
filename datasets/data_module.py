@@ -69,11 +69,6 @@ class Dataset(InMemoryDataset):
         clean_positions, clean_node_features, clean_cell_class = self._clean_data(
             positions, node_features, cell_class, nan_rows
         )
-        
-        # Also clean the input_data to match the cleaned tensors
-        # Convert torch boolean tensor to numpy for pandas indexing
-        nan_rows_np = nan_rows.numpy()
-        self.input_data_cleaned = self.input_data[~nan_rows_np].reset_index(drop=True)
 
         # Update data attributes
         self._update_data_attributes(
@@ -109,8 +104,7 @@ class Dataset(InMemoryDataset):
         gene_names,
         cell_class_decoder,
         cell_images=None,
-    ):
-
+    ):        
         if not self.input_data.index.is_numeric():
             self.input_data.index = pd.to_numeric(self.input_data.index, errors='coerce').fillna(0).astype(int)
 
@@ -159,8 +153,7 @@ class Dataset(InMemoryDataset):
         }
 
     def _generate_slice_indices(self):
-        # Use cleaned data for slice generation to avoid index mismatches
-        slices = self.input_data_cleaned["cell_section"].values
+        slices = self.input_data["cell_section"].values
         current_slice, slice_start, slice_ = slices[0], 0, []
 
         for i in range(1, len(slices)):
@@ -184,19 +177,6 @@ class Dataset(InMemoryDataset):
         print(self.split)
         print(self.maximum_graph_size)
         print(np.unique(slice_))
-
-        # Debug: Print data information
-        print(f"DEBUG - Split: {self.split}")
-        print(f"DEBUG - Original data shape: {self.input_data.shape}")
-        print(f"DEBUG - Cleaned data shape: {self.input_data_cleaned.shape}")
-        print(f"DEBUG - Number of unique slices: {len(np.unique(slice_))}")
-        print(f"DEBUG - Max slice index: {max(slice_) if slice_ else 'No slices'}")
-        print(f"DEBUG - Cleaned data size: {len(self.input_data_cleaned)}")
-        if hasattr(self, '_data'):
-            if hasattr(self._data, 'node_features') and self._data.node_features is not None:
-                print(f"DEBUG - Node features size: {self._data.node_features.shape}")
-            if hasattr(self._data, 'positions') and self._data.positions is not None:
-                print(f"DEBUG - Positions size: {self._data.positions.shape}")
 
         # Slice cell_images based on the generated indices
         if self.cell_images is not None:
@@ -252,25 +232,17 @@ class DataModule(AbstractDataModule):
     def process_cell_images_or_embeddings(self, cell_images_or_embeddings, data):
         if isinstance(cell_images_or_embeddings, dict):
             print("cell_images_or_embeddings is a dict")
-
-            # Ensure index values are string/int compatible with dict keys
             cell_ids = data.index.values
             present_mask = np.isin(cell_ids, list(cell_images_or_embeddings.keys()))
-            
             if not present_mask.all():
                 missing = cell_ids[~present_mask]
                 print(f"[WARNING] {len(missing)} cell_ids missing in image dict. Ignoring them.")
-
             filtered_ids = cell_ids[present_mask]
-
-            # Stack the tensors in the correct order
             try:
                 cell_images_tensor = torch.stack([cell_images_or_embeddings[cid] for cid in filtered_ids])
+                data = data[present_mask].reset_index(drop=True)
             except Exception as e:
                 raise ValueError(f"Error stacking tensors for IDs: {filtered_ids[:5]}...") from e
-
-            # Filter the DataFrame
-            data = data[present_mask].reset_index(drop=True)
 
         elif isinstance(cell_images_or_embeddings, torch.Tensor):
             print("cell_images_or_embeddings is a tensor (mock images or embeddings)")
@@ -279,13 +251,13 @@ class DataModule(AbstractDataModule):
         else:
             raise ValueError(f"Invalid cell images type: {type(cell_images_or_embeddings)}")
 
-        return cell_images_tensor
+        return cell_images_tensor, data
 
     def _initialize_dataset(self, split, data, cell_images_or_embeddings, cfg):
         if cfg.model.cell_image_encoder is None:
             return Dataset(split=split, input_data=data, cfg=cfg)
         
-        cell_images_tensor = self.process_cell_images_or_embeddings(cell_images_or_embeddings, data)
+        cell_images_tensor, data = self.process_cell_images_or_embeddings(cell_images_or_embeddings, data)
         return Dataset(split=split, input_data=data, cell_images=cell_images_tensor, cfg=cfg)
 
     def collate(self, batch):
