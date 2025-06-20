@@ -33,6 +33,7 @@ def get_resume(
     Tuple containing the updated configuration object and the loaded model.
     """
     # Load the model from the specified checkpoint
+    
     model = FullDenoisingDiffusion.load_from_checkpoint(
         checkpoint_path, dataset_infos=dataset_infos, cfg=cfg
     )

@@ -88,6 +88,12 @@ def plot_scatter_visualization(metadata_true, metadata_pred, uniques, dir):
     # Define the color palette for the unique categories
     pl_palette = sns.color_palette(cc.glasbey, n_colors=len(uniques))
     palette_dict = dict(zip(uniques, pl_palette))
+    
+    # Compute common axis limits
+    all_x = pd.concat([metadata_true["coord_X"], metadata_pred["coord_X"]])
+    all_y = pd.concat([metadata_true["coord_Y"], metadata_pred["coord_Y"]])
+    xlim = (all_x.min(), all_x.max())
+    ylim = (all_y.min(), all_y.max())
 
     # Groundtruth Plot
     axarr[0].set_title("Groundtruth", fontsize=16)  # Adjust title font size
@@ -103,6 +109,8 @@ def plot_scatter_visualization(metadata_true, metadata_pred, uniques, dir):
     )
     g1.set_xlabel("X", fontsize=14)  # Adjust X-axis label font size
     g1.set_ylabel("Y", fontsize=14)  # Adjust Y-axis label font size
+    # g1.set_xlim(xlim)
+    # g1.set_ylim(ylim)
 
     # Prediction Plot
     axarr[1].set_title("Prediction", fontsize=16)  # Adjust title font size
@@ -118,6 +126,8 @@ def plot_scatter_visualization(metadata_true, metadata_pred, uniques, dir):
     )
     g2.set_xlabel("X", fontsize=14)  # Adjust X-axis label font size
     g2.set_ylabel("Y", fontsize=14)  # Adjust Y-axis label font size
+    g2.set_xlim(xlim)
+    g2.set_ylim(ylim)
 
     # Create custom legend
     legend_elements = [
@@ -143,4 +153,5 @@ def plot_scatter_visualization(metadata_true, metadata_pred, uniques, dir):
     # Save the plot
     path = f"{dir}/class_scatter_plot.pdf"
     plt.savefig(path, bbox_inches="tight", dpi=300)
+    plt.show()
     plt.close()

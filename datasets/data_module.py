@@ -66,12 +66,16 @@ class Dataset(InMemoryDataset):
 
         # Clean NaN rows
         nan_rows = detect_nan_rows(positions)
-        clean_positions, clean_node_features, clean_cell_class = self._clean_data(
-            positions, node_features, cell_class, nan_rows
+        # print the number of nan_rows
+        print("[DEBUG] nan_rows", nan_rows.sum())
+        cell_id = torch.tensor(self.input_data.index.values)
+        clean_positions, clean_node_features, clean_cell_class, clean_cell_id = self._clean_data(
+            positions, node_features, cell_class, cell_id, nan_rows
         )
 
         # Update data attributes
         self._update_data_attributes(
+            clean_cell_id,
             clean_positions,
             clean_node_features,
             clean_cell_class,
@@ -90,14 +94,16 @@ class Dataset(InMemoryDataset):
         )
         return positions, node_features, torch.tensor(cell_class), cell_class_decoder
 
-    def _clean_data(self, positions, node_features, cell_class, nan_rows):
+    def _clean_data(self, positions, node_features, cell_class, cell_id, nan_rows):
         clean_positions = positions[~nan_rows]
         clean_node_features = node_features[~nan_rows]
         clean_cell_class = cell_class[~nan_rows]
-        return clean_positions, clean_node_features, clean_cell_class
+        clean_cell_id = cell_id[~nan_rows]
+        return clean_positions, clean_node_features, clean_cell_class, clean_cell_id
 
     def _update_data_attributes(
         self,
+        clean_cell_id,
         clean_positions,
         clean_node_features,
         clean_cell_class,
@@ -105,10 +111,10 @@ class Dataset(InMemoryDataset):
         cell_class_decoder,
         cell_images=None,
     ):        
-        if not self.input_data.index.is_numeric():
-            self.input_data.index = pd.to_numeric(self.input_data.index, errors='coerce').fillna(0).astype(int)
+        # if not self.input_data.index.is_numeric():
+        #     self.input_data.index = pd.to_numeric(self.input_data.index, errors='coerce').fillna(0).astype(int)
 
-        cell_ID = torch.tensor(self.input_data.index)
+        cell_ID = clean_cell_id
 
         self._data.positions = clean_positions
         self._data.node_features = clean_node_features
@@ -232,7 +238,7 @@ class DataModule(AbstractDataModule):
     def process_cell_images_or_embeddings(self, cell_images_or_embeddings, data):
         if isinstance(cell_images_or_embeddings, dict):
             print("cell_images_or_embeddings is a dict")
-            cell_ids = data.index.values
+            cell_ids = data["cell_id"].values
             present_mask = np.isin(cell_ids, list(cell_images_or_embeddings.keys()))
             if not present_mask.all():
                 missing = cell_ids[~present_mask]
@@ -247,7 +253,7 @@ class DataModule(AbstractDataModule):
         elif isinstance(cell_images_or_embeddings, torch.Tensor):
             print("cell_images_or_embeddings is a tensor (mock images or embeddings)")
             cell_images_tensor = cell_images_or_embeddings
-
+            data = data 
         else:
             raise ValueError(f"Invalid cell images type: {type(cell_images_or_embeddings)}")
 
@@ -292,7 +298,11 @@ class DataModule(AbstractDataModule):
             data_path = cfg.dataset.validation_data_path
         else:
             data_path = cfg.dataset.test_data_path
-        data = pd.read_csv(f"{data_path}", index_col=0)
+        data = pd.read_csv(f"{data_path}")
+        print(f"[INFO] Loaded {split} data from {data_path}")
+        
+        # remove duplicate "cell_id" rows
+        data = data.drop_duplicates(subset=['cell_id'])
         
         # Ensure that the data contains the necessary columns, if not call standardise_dataframe_colnames:
         # data = standardise_dataframe_colnames(data)

@@ -139,6 +139,7 @@ def detect_nan_rows(pos: np.ndarray) -> np.ndarray:
     return torch.isnan(pos).any(dim=1)
 
 
+
 def position_normalize(input_data: pd.DataFrame) -> pd.DataFrame:
     """
     Normalizes the given positions to a range between -0.5 and 0.5.
@@ -150,13 +151,19 @@ def position_normalize(input_data: pd.DataFrame) -> pd.DataFrame:
         np.ndarray: The normalized positions.
     """
 
+    epsilon = 1e-8
     for key in ["coord_X", "coord_Y"]:
         if "cell_section" in input_data.columns:
             groups = input_data.groupby("cell_section")[key]
-            min_, max_ = groups.transform("min"), groups.transform("max")
+            min_ = groups.transform("min")
+            max_ = groups.transform("max")
+            range_ = max_ - min_
+            input_data[key] = (input_data[key] - min_) / range_.replace(0, epsilon) - 0.5
         else:
             min_, max_ = input_data[key].min(), input_data[key].max()
-        input_data[key] = (input_data[key] - min_) / (max_ - min_) - 0.5
+            range_ = max_ - min_
+            input_data[key] = (input_data[key] - min_) / (range_ if range_ != 0 else epsilon) - 0.5
+
     return input_data
 
 
@@ -201,7 +208,7 @@ def cell_class_decoding(batch: DataHolder, cell_class_decoder: dict) -> list:
         list: A list of cell class characters.
     """
     cell_class = batch.cell_class[batch.node_mask]
-    cell_class_int = cell_class.squeeze().cpu().numpy()
+    cell_class_int = np.atleast_1d(cell_class.squeeze().cpu().numpy())
     cell_class_character = [cell_class_decoder[item] for item in cell_class_int]
 
     return cell_class_character
