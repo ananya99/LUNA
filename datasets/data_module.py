@@ -195,31 +195,9 @@ class Dataset(InMemoryDataset):
 
 class DataModule(AbstractDataModule):
     def __init__(self, cfg):
-        train_data, train_num_cells = self.load_tabular_data(cfg, 'train')
-        test_data, test_num_cells = self.load_tabular_data(cfg, 'test')
-        
-        if cfg.dataset.train_cell_image_embeddings_path is not None and cfg.dataset.train_cell_images_path is not None:
-            raise ValueError("Both train_cell_image_embeddings_path and train_cell_images_path are provided. Please provide only one.")
-        
-        train_cell_images_or_embeddings = None
-        test_cell_images_or_embeddings = None
-        
-        if cfg.dataset.train_cell_image_embeddings_path is not None:
-            train_cell_images_or_embeddings = self.load_cell_image_embeddings(cfg, 'train', train_num_cells)
-            test_cell_images_or_embeddings = self.load_cell_image_embeddings(cfg, 'test', test_num_cells)
-        
-        if cfg.dataset.train_cell_images_path is not None:
-            train_cell_images_or_embeddings = self.load_cell_images(cfg, 'train', train_num_cells)
-            test_cell_images_or_embeddings = self.load_cell_images(cfg, 'test', test_num_cells)
-            
-        self.train_dataset = self._initialize_dataset("train", train_data, train_cell_images_or_embeddings, cfg)
-        self.test_dataset = self._initialize_dataset("test", test_data, test_cell_images_or_embeddings, cfg)
-
-        if cfg.dataset.validation_data_path:
-            validation_data = self.data_loading(cfg, 'validation')
-            self.validation_dataset = self._initialize_dataset("validation", validation_data, cfg)
-        else:
-            self.validation_dataset = None
+        self.train_dataset = self.load_data(cfg, 'train')
+        self.test_dataset = self.load_data(cfg, 'test')
+        self.validation_dataset = self.load_data(cfg, 'validation') if cfg.dataset.validation_data_path else None
 
         self.statistics = {
             "train": self.train_dataset.statistics,
@@ -234,62 +212,6 @@ class DataModule(AbstractDataModule):
             test_dataset=self.test_dataset,
         )
         
-    def process_cell_images_or_embeddings(self, cell_images_or_embeddings, data):
-        if isinstance(cell_images_or_embeddings, dict):
-            print("cell_images_or_embeddings is a dict")
-            original_cell_ids = data["original_cell_id"].values
-            present_mask = np.isin(original_cell_ids, list(cell_images_or_embeddings.keys()))
-            if not present_mask.all():
-                missing = original_cell_ids[~present_mask]
-                print(f"[WARNING] {len(missing)} cell_ids missing in image dict. Ignoring them.")
-            filtered_ids = original_cell_ids[present_mask]
-            try:
-                cell_images_tensor = torch.stack([cell_images_or_embeddings[cid] for cid in filtered_ids])
-                data = data[present_mask]
-            except Exception as e:
-                raise ValueError(f"Error stacking tensors for IDs: {filtered_ids[:5]}...") from e
-
-        elif isinstance(cell_images_or_embeddings, torch.Tensor):
-            print("cell_images_or_embeddings is a tensor (mock images or embeddings)")
-            cell_images_tensor = cell_images_or_embeddings
-            data = data 
-        else:
-            raise ValueError(f"Invalid cell images type: {type(cell_images_or_embeddings)}")
-
-        return cell_images_tensor, data
-
-    def _initialize_dataset(self, split, data, cell_images_or_embeddings, cfg):
-        if cfg.model.cell_image_encoder is None:
-            return Dataset(split=split, input_data=data, cfg=cfg)
-        
-        cell_images_tensor, data = self.process_cell_images_or_embeddings(cell_images_or_embeddings, data)
-        return Dataset(split=split, input_data=data, cell_images=cell_images_tensor, cfg=cfg)
-
-    def collate(self, batch):
-        return self._create_batch(batch)
-
-    def _create_batch(self, batch):
-        batch_data = Batch()
-        batch_data.node_features = torch.cat(
-            [data.node_features for data in batch], dim=0
-        )
-        batch_data.positions = torch.cat([data.positions for data in batch], dim=0)
-        batch_data.cell_images = torch.cat(
-            [data.cell_images for data in batch], dim=0
-        ) if hasattr(batch[0], "cell_images") else None
-        batch_data.cell_class = torch.cat([data.cell_class for data in batch], dim=0)
-        batch_data.cell_ID = torch.cat([data.cell_ID for data in batch], dim=0)
-
-        batch_data.batch = torch.tensor(
-            [
-                i
-                for i, data in enumerate(batch)
-                for _ in range(data.node_features.size(0))
-            ],
-            dtype=torch.long,
-        )
-        return batch_data
-    
     def load_data(self, cfg: omegaconf.DictConfig, split) -> pd.DataFrame:
         """
         Load the data from the specified path or generate mock data in mock_data_for_debugging mode.
@@ -435,6 +357,71 @@ class DataModule(AbstractDataModule):
             
         print(f"[INFO] Loaded all {split} cell image embeddings from {cell_image_embeddings_path}")
         return embeddings_dict
+        
+    def process_cell_images_or_embeddings(self, cell_images_or_embeddings, data):
+        """
+        Process the cell images or embeddings to match the tabular data.
+        Args:
+            cell_images_or_embeddings: The cell images or embeddings.
+            data: The tabular data.
+        Returns:
+            torch.Tensor: The processed cell images or embeddings.
+            pd.DataFrame: The processed tabular data.
+        """
+        if isinstance(cell_images_or_embeddings, dict):
+            print("cell_images_or_embeddings is a dict")
+            original_cell_ids = data["original_cell_id"].values
+            present_mask = np.isin(original_cell_ids, list(cell_images_or_embeddings.keys()))
+            if not present_mask.all():
+                missing = original_cell_ids[~present_mask]
+                print(f"[WARNING] {len(missing)} cell_ids missing in image dict. Ignoring them.")
+            filtered_ids = original_cell_ids[present_mask]
+            try:
+                cell_images_tensor = torch.stack([cell_images_or_embeddings[cid] for cid in filtered_ids])
+                data = data[present_mask]
+            except Exception as e:
+                raise ValueError(f"Error stacking tensors for IDs: {filtered_ids[:5]}...") from e
+
+        elif isinstance(cell_images_or_embeddings, torch.Tensor):
+            print("cell_images_or_embeddings is a tensor (mock images or embeddings)")
+            cell_images_tensor = cell_images_or_embeddings
+            data = data 
+        else:
+            raise ValueError(f"Invalid cell images type: {type(cell_images_or_embeddings)}")
+
+        return cell_images_tensor, data
+
+    def _initialize_dataset(self, split, data, cell_images_or_embeddings, cfg):
+        if cfg.model.cell_image_encoder is None:
+            return Dataset(split=split, input_data=data, cfg=cfg)
+        
+        cell_images_tensor, data = self.process_cell_images_or_embeddings(cell_images_or_embeddings, data)
+        return Dataset(split=split, input_data=data, cell_images=cell_images_tensor, cfg=cfg)
+
+    def collate(self, batch):
+        return self._create_batch(batch)
+
+    def _create_batch(self, batch):
+        batch_data = Batch()
+        batch_data.node_features = torch.cat(
+            [data.node_features for data in batch], dim=0
+        )
+        batch_data.positions = torch.cat([data.positions for data in batch], dim=0)
+        batch_data.cell_images = torch.cat(
+            [data.cell_images for data in batch], dim=0
+        ) if hasattr(batch[0], "cell_images") else None
+        batch_data.cell_class = torch.cat([data.cell_class for data in batch], dim=0)
+        batch_data.cell_ID = torch.cat([data.cell_ID for data in batch], dim=0)
+
+        batch_data.batch = torch.tensor(
+            [
+                i
+                for i, data in enumerate(batch)
+                for _ in range(data.node_features.size(0))
+            ],
+            dtype=torch.long,
+        )
+        return batch_data
 
 
 class Infos(AbstractDatasetInfos):
