@@ -7,6 +7,13 @@ from utils.data.dataholder import DataHolder
 import torch
 
 def determine_content_type(cell_images):
+    """
+    Determine the content type of the cell images. If the cell images are 128x128x1, they are images. If the cell images are 768, they are MAE embeddings.
+    Args:
+        cell_images (torch.Tensor): Cell images.
+    Returns:
+        str: The content type of the cell images. Options: "image", "embedding"
+    """
     if len(cell_images.shape) == 4 and cell_images.shape[2] == 128 and cell_images.shape[3] == 128:
         return "image"
     elif len(cell_images.shape) == 3 and cell_images.shape[2] == 768:
@@ -147,13 +154,11 @@ class Model(nn.Module):
         if cell_images is not None:
             content_type = determine_content_type(cell_images)
             if content_type == "image":
-                # print("[INFO] Encoding cell images as images")
                 batch_size, num_cells = cell_images.shape[0], cell_images.shape[1]
                 cell_images = cell_images.view(batch_size * num_cells, 1, 128, 128)
                 cell_images_encoded = self.image_encoder(cell_images)
                 cell_images_encoded = cell_images_encoded.view(batch_size, num_cells, -1)
             elif content_type == "embedding":
-                # print("[INFO] Already encoded cell images as embeddings")
                 cell_images_encoded = self.image_encoder(cell_images)
             else:
                 raise ValueError(f"Unknown cell image type: {content_type}")
@@ -169,7 +174,7 @@ class Model(nn.Module):
 
         transformed_features = DataHolder(
             node_features=transformed_node_features,
-            cell_images=cell_images_encoded if cell_images is not None else None,
+            cell_images=cell_images_encoded,
             diffusion_time=transformed_diffusion_time,
             positions=transformed_positions,
             node_mask=node_mask,

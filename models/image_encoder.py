@@ -12,6 +12,23 @@ class Normalize(nn.Module):
         return (x - 0.5) / 0.5  # Normalize to [-1, 1] range
     
 class CNNEncoder(nn.Module):
+    """
+    Basic CNN encoder for grayscale cell images.
+    
+    Architecture:
+        - 4x4 Conv (stride=2, padding=1), 32 filters → GroupNorm → ReLU
+        - 4x4 Conv (stride=2, padding=1), 64 filters → GroupNorm → ReLU
+        - 4x4 Conv (stride=2, padding=1), 128 filters → GroupNorm → ReLU
+        - 4x4 Conv (stride=2, padding=1), 256 filters → GroupNorm → ReLU
+        - AdaptiveAvgPool2d((1, 1)) → Flatten → Linear(256 → hidden_dims)
+        
+    Args:
+        hidden_dims (int): Size of hidden layer (default: 32)
+        
+    Forward:
+        Input: 1-channel grayscale image (e.g., 128x128)
+        Output: hidden_dims-dimensional vector (e.g., 32-D)
+    """
     def __init__(self, hidden_dims):
         super().__init__()
         self.encoder = nn.Sequential(
@@ -30,19 +47,31 @@ class CNNEncoder(nn.Module):
             nn.Conv2d(128, 256, 4, 2, 1),  # → (256, 8, 8)
             nn.GroupNorm(16, 256),
             nn.ReLU(),
-
-            # nn.Flatten(),                 # → 512 × 4 × 4 = 8192
-            # nn.Linear(8192, hidden_dims)           # → Final 32-D vector
             
-            nn.AdaptiveAvgPool2d((1, 1)),  # (256, 1, 1)
+            nn.AdaptiveAvgPool2d((1, 1)),  # → (256, 1, 1)
             nn.Flatten(),                  # → 256
-            nn.Linear(256, hidden_dims)    # final 32-D vector
+            nn.Linear(256, hidden_dims)    # → final 32-D vector
         )
 
     def forward(self, x):
         return self.encoder(x)
     
 class DINOv2Encoder(nn.Module):
+    """
+    DINOv2-based encoder for grayscale cell images.
+
+    - Converts grayscale images to 3-channel RGB
+    - Resizes and normalizes input to match DINOv2 expectations
+    - Uses pretrained DINOv2 ViT-S/14 backbone (frozen)
+    - Outputs a `hidden_dims`-dimensional feature vector via a linear MLP head
+
+    Args:
+        hidden_dims (int): Size of hidden layer (default: 32)
+        
+    Forward:
+        Input: 1xHxW grayscale image
+        Output: hidden_dims-dimensional vector (e.g., 32-D)
+    """
     def __init__(self, hidden_dims):
         super().__init__()
 
@@ -57,6 +86,8 @@ class DINOv2Encoder(nn.Module):
         )
         
         self.model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14')
+        
+        # Freeze DINOv2 weights
         for param in self.model.parameters():
             param.requires_grad = False  # freeze DINOv2 weights
         self.model.eval()
@@ -70,11 +101,18 @@ class DINOv2Encoder(nn.Module):
 
     def forward(self, x):
         x = self.transform(x)
-        with torch.no_grad():  # don't compute gradients through DINO
-            feats = self.model(x)  # returns [B, 384] by default for dinov2_vits14
-        return self.mlp(feats)
+        with torch.no_grad():  # don't compute gradients through DINOv2
+            x = self.model(x)
+        return self.mlp(x)
 
 class ImageEncoder(nn.Module):
+    """
+    Image encoder for cell images. It can be a CNN, DINOv2 or MAE embeddings encoder based on the cell_image_encoder argument.
+
+    Args:
+        output_dims (int): Size of output feature vector (default: 32)
+        cell_image_encoder (str): Type of cell image encoder (default: None). Options: "CNN", "DINOv2", "MAE_embeddings"
+    """
     def __init__(self, output_dims, cell_image_encoder):
         super(ImageEncoder, self).__init__()
         self.cell_image_encoder = cell_image_encoder
@@ -95,6 +133,18 @@ class ImageEncoder(nn.Module):
         return self.encoder(x)
     
 class MAEEmbeddingsMLP(nn.Module):
+    """
+    MLP for reducing MAE embedding vectors.
+
+    Args:
+        input_dims (int): Dimensionality of input embeddings (default: 768)
+        hidden_dims (int): Size of hidden layer (default: 128)
+        output_dims (int): Size of output feature vector (default: 32)
+
+    Forward:
+        Input: Tensor of shape [B, input_dims]
+        Output: Tensor of shape [B, output_dims]
+    """
     def __init__(self, input_dims = 768, hidden_dims = 128, output_dims = 32):
         super(MAEEmbeddingsMLP, self).__init__()
         self.mlp = nn.Sequential(

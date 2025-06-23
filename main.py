@@ -27,7 +27,6 @@ def main(cfg: DictConfig):
     # Set up the dataset
     datamodule, dataset_infos = setup_dataset(cfg)
 
-    print("cfg.general.mode: ", cfg.general.mode)
     # Run training or testing based on mode
     if cfg.general.mode == "train_and_test":
         train_model(cfg, datamodule, dataset_infos)
@@ -57,8 +56,6 @@ def train_model(cfg: DictConfig, datamodule, dataset_infos):
 
 def test_model(cfg: DictConfig, datamodule, dataset_infos):
     """Test the model using saved checkpoints."""
-    # checkpoints_parent_dir = pathlib.Path('/mlbio_scratch/anagupta/luna/checkpoints')
-    # checkpoints_parent_dir = pathlib.Path(cfg.test.checkpoints_parent_dir)
     checkpoints_parent_dir = cfg.test.checkpoints_parent_dir
     print("Directory:", checkpoints_parent_dir)
 
