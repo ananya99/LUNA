@@ -67,7 +67,7 @@ class Dataset(InMemoryDataset):
         # Clean NaN rows
         nan_rows = detect_nan_rows(positions)
         # print the number of nan_rows
-        print("[DEBUG] nan_rows", nan_rows.sum())
+        print("[DEBUG] Detected nan_rows: ", nan_rows.sum())
         
         if not self.input_data.index.is_numeric():
             self.input_data.index = pd.to_numeric(self.input_data.index, errors='coerce').fillna(0).astype(int)
@@ -119,7 +119,7 @@ class Dataset(InMemoryDataset):
         self._data.node_features = clean_node_features
         self._data.cell_class = clean_cell_class
         self._data.cell_ID = clean_cell_id
-        self._data.cell_images = cell_images if cell_images is not None else None
+        self._data.cell_images = cell_images
 
         num_cell_to_region_mapping_dict = self._create_region_mapping_dict()
         self.statistics = Statistics(
@@ -195,8 +195,8 @@ class Dataset(InMemoryDataset):
 
 class DataModule(AbstractDataModule):
     def __init__(self, cfg):
-        train_data, train_num_cells = self.data_loading(cfg, 'train')
-        test_data, test_num_cells = self.data_loading(cfg, 'test')
+        train_data, train_num_cells = self.load_tabular_data(cfg, 'train')
+        test_data, test_num_cells = self.load_tabular_data(cfg, 'test')
         
         if cfg.dataset.train_cell_image_embeddings_path is not None and cfg.dataset.train_cell_images_path is not None:
             raise ValueError("Both train_cell_image_embeddings_path and train_cell_images_path are provided. Please provide only one.")
@@ -289,8 +289,60 @@ class DataModule(AbstractDataModule):
             dtype=torch.long,
         )
         return batch_data
+    
+    def load_data(self, cfg: omegaconf.DictConfig, split) -> pd.DataFrame:
+        """
+        Load the data from the specified path or generate mock data in mock_data_for_debugging mode.
 
-    def data_loading(self, cfg: omegaconf.DictConfig, split) -> pd.DataFrame:
+        Args:
+            cfg (omegaconf.DictConfig): Configuration object containing dataset paths.
+            split (str): The split of the dataset ('train', 'validation', 'test').
+
+        Raises:
+            ValueError: If both cell_image_embeddings_path and cell_images_path are provided.
+
+        Returns:
+            Dataset: The loaded dataset.
+        """
+        data, num_cells = self.load_tabular_data(cfg, split)
+        
+        split_to_cell_image_embeddings_path = {
+            'train': cfg.dataset.train_cell_image_embeddings_path,
+            'validation': cfg.dataset.validation_cell_image_embeddings_path,
+            'test': cfg.dataset.test_cell_image_embeddings_path,
+        }
+        cell_image_embeddings_path = split_to_cell_image_embeddings_path[split]
+        
+        split_to_cell_images_path = {
+            'train': cfg.dataset.train_cell_images_path,
+            'validation': cfg.dataset.validation_cell_images_path,
+            'test': cfg.dataset.test_cell_images_path,
+        }
+        cell_images_path = split_to_cell_images_path[split]
+        
+        if cell_image_embeddings_path is not None and cell_images_path is not None:
+            raise ValueError("Both cell_image_embeddings_path and cell_images_path are provided. Please provide only one.")
+        
+        cell_images_or_embeddings = None
+        
+        if cell_image_embeddings_path is not None:
+            cell_images_or_embeddings = self.load_cell_image_embeddings(cfg, split, num_cells)
+        
+        if cell_images_path is not None:
+            cell_images_or_embeddings = self.load_cell_images(cfg, split, num_cells)
+            
+        return self._initialize_dataset(split, data, cell_images_or_embeddings, cfg)
+
+    def load_tabular_data(self, cfg: omegaconf.DictConfig, split) -> pd.DataFrame:
+        """
+        Load the tabular data from the specified path. Tabular data includes cell coordinates, cell class, cell section and gene expression.
+        Args:
+            cfg: Configuration object containing dataset paths.
+            split: The split of the dataset ('train', 'validation', 'test').
+        Returns:
+            pd.DataFrame: The loaded data.
+        """
+        
         if split == 'train':
             data_path = cfg.dataset.train_data_path
         elif split == 'validation':
