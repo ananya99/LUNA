@@ -15,4 +15,4 @@ export name=$name
 export dir=$config_dir
 export output_path=$output_path
 
-python3 /home/anagupta/luna/LUNA/main.py --config-path=$config_dir --config-name=config.yaml general.mode='test_only' general.name=$name > $output_path 2>&1 || { echo "[test.sh] main.py failed, exiting"; exit 1; }
+python3 /mlbio_scratch/anagupta/luna/LUNA/main.py --config-path=$config_dir --config-name=config.yaml general.mode='test_only' general.name=$name > $output_path 2>&1 || { echo "[test.sh] main.py failed, exiting"; exit 1; }

@@ -27,12 +27,12 @@ def main(cfg: DictConfig):
     # Set up the dataset
     datamodule, dataset_infos = setup_dataset(cfg)
 
+    print("cfg.general.mode: ", cfg.general.mode)
     # Run training or testing based on mode
     if cfg.general.mode == "train_and_test":
         train_model(cfg, datamodule, dataset_infos)
         test_model(cfg, datamodule, dataset_infos)
     elif cfg.general.mode == "test_only":
-        print("Testing the model")
         test_model(cfg, datamodule, dataset_infos)
 
 
@@ -52,8 +52,6 @@ def train_model(cfg: DictConfig, datamodule, dataset_infos):
 
     trainer.fit(model, datamodule=datamodule)
 
-    # checkpoints_parent_dir = os.path.join(os.getcwd(), "checkpoints")
-    cfg.test.checkpoints_parent_dir = cfg.general.local_saved_path + "/checkpoints"
     return cfg.test.checkpoints_parent_dir
 
 
