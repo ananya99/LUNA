@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Optional
 import torch
 import torch.nn as nn
 from torch.nn.modules.linear import Linear
@@ -24,6 +24,7 @@ class SelfAttention(nn.Module):
         diffusion_time_dimensions: torch.Tensor,
         delta_dimensions: torch.Tensor,
         num_heads: int,
+        cell_image_encoder: str = None,
         last_layer=False,
     ):
         """
@@ -41,6 +42,7 @@ class SelfAttention(nn.Module):
             node_features_dimensions % num_heads == 0
         ), f"node_features_dimensions: {node_features_dimensions} -- nhead: {num_heads}"
         self.node_features_dimensions = node_features_dimensions
+        self.cell_image_encoder = cell_image_encoder
         self.cell_image_embedding_dim = cell_image_embedding_dim
         self.diffusion_time_dimensions = diffusion_time_dimensions
         self.delta_dimensions = delta_dimensions
@@ -66,7 +68,7 @@ class SelfAttention(nn.Module):
         
         # Node Transformation (Attention)
         total_feature_dim = (
-            node_features_dimensions + delta_dimensions + diffusion_time_dimensions + cell_image_embedding_dim
+            node_features_dimensions + delta_dimensions + diffusion_time_dimensions + (cell_image_embedding_dim if cell_image_encoder is not None else 0)
         )
         self.lin_node_features = torch.nn.Linear(
             node_features_dimensions, node_features_dimensions
@@ -97,7 +99,7 @@ class SelfAttention(nn.Module):
     def transform_node_features(
         self,
         node_features: torch.Tensor,
-        cell_images: torch.Tensor,
+        cell_images: Optional[torch.Tensor],
         positions: torch.Tensor,
         diffusion_time: torch.Tensor,
         node_mask: torch.Tensor,
@@ -125,18 +127,24 @@ class SelfAttention(nn.Module):
         # print("transformed_time:", transformed_time.shape)
         # print("cell_images:", cell_images.shape if cell_images is not None else None)
         
-        # Concatenate features
-        if cell_images is None:
-            batch_size, num_nodes, _ = transformed_X.shape
-            cell_images = torch.zeros(
-                batch_size, num_nodes, self.cell_image_embedding_dim,
-                device=device  # Create zeros tensor on the same device
+        # Concatenate features            
+        # Always concatenate with cell_images if encoder is configured
+        if self.cell_image_encoder is None:
+            concatenated_features = torch.cat(
+                [transformed_X, transformed_delta, transformed_time],
+                dim=-1,
             )
-
-        concatenated_features = torch.cat(
-            [transformed_X, transformed_delta, transformed_time, cell_images],
-            dim=-1,
-        )
+        else:
+            if cell_images is None:
+                batch_size, num_nodes, _ = transformed_X.shape
+                cell_images = torch.zeros(
+                    batch_size, num_nodes, self.cell_image_embedding_dim,
+                    device=device  # Create zeros tensor on the same device
+                )
+            concatenated_features = torch.cat(
+                [transformed_X, transformed_delta, transformed_time, cell_images],
+                dim=-1,
+            )
         
         # Apply linear transformation to match expected dimensions
         concatenated_features = self.concatenated_features(concatenated_features)
@@ -237,19 +245,19 @@ class SelfAttention(nn.Module):
             node_features=node_features,
             cell_images=cell_images,
             positions=positions,
-            diffusion_time=diffusion_time,
+            diffusion_time=transformed_diffusion_time,
             node_mask=node_mask,
             e_mask1=edge_mask_1,
             e_mask2=edge_mask_2,
         )
 
         # Transform positions
-        transformed_position = self.transform_positions(
+        transformed_positions = self.transform_positions(
             head_outputs=transformed_features,
         )
 
         return (
             transformed_features,
             transformed_diffusion_time,
-            transformed_position,
+            transformed_positions,
         )

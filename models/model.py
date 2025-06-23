@@ -96,6 +96,7 @@ class Model(nn.Module):
             [
                 TransformerLayer(
                     node_features_dimensions=hidden_dims["dx"],
+                    cell_image_encoder=self.cell_image_encoder,
                     cell_image_embedding_dim=hidden_dims["cell_image_embedding_dim"],
                     diffusion_time_dimensions=hidden_dims["dy"],
                     delta_dimensions=hidden_dims["dd"],
