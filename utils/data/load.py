@@ -71,10 +71,10 @@ def standardise_dataframe_colnames(raw_data):
     """
     raw_data = raw_data.rename(
         columns={
-            "x": "coord_X", # x coordinate
-            "y": "coord_Y", # y coordinate
-            "subclass": "cell_class", # cell class
-            "region": "cell_section", # cell section
+            "x": "coord_X" if "coord_X" not in raw_data.columns else "x", # x coordinate
+            "y": "coord_Y" if "coord_Y" not in raw_data.columns else "y", # y coordinate
+            "subclass": "cell_class" if "cell_class" not in raw_data.columns else "subclass", # cell class
+            "region": "cell_section" if "cell_section" not in raw_data.columns else "region", # cell section
         }
     )
     return raw_data

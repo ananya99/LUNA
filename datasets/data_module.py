@@ -68,7 +68,11 @@ class Dataset(InMemoryDataset):
         nan_rows = detect_nan_rows(positions)
         # print the number of nan_rows
         print("[DEBUG] nan_rows", nan_rows.sum())
+        
+        if not self.input_data.index.is_numeric():
+            self.input_data.index = pd.to_numeric(self.input_data.index, errors='coerce').fillna(0).astype(int)
         cell_id = torch.tensor(self.input_data.index.values)
+        
         clean_positions, clean_node_features, clean_cell_class, clean_cell_id = self._clean_data(
             positions, node_features, cell_class, cell_id, nan_rows
         )
@@ -111,15 +115,10 @@ class Dataset(InMemoryDataset):
         cell_class_decoder,
         cell_images=None,
     ):        
-        # if not self.input_data.index.is_numeric():
-        #     self.input_data.index = pd.to_numeric(self.input_data.index, errors='coerce').fillna(0).astype(int)
-
-        cell_ID = clean_cell_id
-
         self._data.positions = clean_positions
         self._data.node_features = clean_node_features
         self._data.cell_class = clean_cell_class
-        self._data.cell_ID = cell_ID
+        self._data.cell_ID = clean_cell_id
         self._data.cell_images = cell_images if cell_images is not None else None
 
         num_cell_to_region_mapping_dict = self._create_region_mapping_dict()
@@ -238,15 +237,15 @@ class DataModule(AbstractDataModule):
     def process_cell_images_or_embeddings(self, cell_images_or_embeddings, data):
         if isinstance(cell_images_or_embeddings, dict):
             print("cell_images_or_embeddings is a dict")
-            cell_ids = data["cell_id"].values
-            present_mask = np.isin(cell_ids, list(cell_images_or_embeddings.keys()))
+            original_cell_ids = data["original_cell_id"].values
+            present_mask = np.isin(original_cell_ids, list(cell_images_or_embeddings.keys()))
             if not present_mask.all():
-                missing = cell_ids[~present_mask]
+                missing = original_cell_ids[~present_mask]
                 print(f"[WARNING] {len(missing)} cell_ids missing in image dict. Ignoring them.")
-            filtered_ids = cell_ids[present_mask]
+            filtered_ids = original_cell_ids[present_mask]
             try:
                 cell_images_tensor = torch.stack([cell_images_or_embeddings[cid] for cid in filtered_ids])
-                data = data[present_mask].reset_index(drop=True)
+                data = data[present_mask]
             except Exception as e:
                 raise ValueError(f"Error stacking tensors for IDs: {filtered_ids[:5]}...") from e
 
@@ -301,11 +300,11 @@ class DataModule(AbstractDataModule):
         data = pd.read_csv(f"{data_path}")
         print(f"[INFO] Loaded {split} data from {data_path}")
         
-        # remove duplicate "cell_id" rows
-        data = data.drop_duplicates(subset=['cell_id'])
+        # Read the data and set the index to 'cell_id'
+        data = pd.read_csv(f"{data_path}").set_index('cell_id')
         
         # Ensure that the data contains the necessary columns, if not call standardise_dataframe_colnames:
-        # data = standardise_dataframe_colnames(data)
+        data = standardise_dataframe_colnames(data)
         assert all(column in data.columns for column in ['coord_X', 'coord_Y', 'cell_section', 'cell_class'])
         
         return data, data.shape[0]
