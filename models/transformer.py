@@ -15,6 +15,9 @@ class TransformerLayer(nn.Module):
 
     Parameters:
     - node_features_dimensions (int): Dimensionality of node features.
+    - cell_image_encoder (str): Type of cell image encoder (default: None). Options: "CNN", "DINOv2", "MAE_embeddings"
+    - cell_image_embedding_dim (int): Dimensionality of the cell image embeddings.
+    - delta_dimensions (int): Dimensionality of the delta features.
     - diffusion_time_dimensions (int): Dimensionality of diffusion time information.
     - num_heads (int): Number of attention heads in the multi-head attention.
     - dim_ff_node_features (int): Dimension of the feedforward network model for node features after self-attention.
@@ -48,6 +51,9 @@ class TransformerLayer(nn.Module):
         Parameters:
         - node_features_dimensions (int): Dimensionality of node features.
         - diffusion_time_dimensions (int): Dimensionality of diffusion time information.
+        - cell_image_encoder (str): Type of cell image encoder (default: None). Options: "CNN", "DINOv2", "MAE_embeddings"
+        - cell_image_embedding_dim (int): Dimensionality of the cell image embeddings.
+        - delta_dimensions (int): Dimensionality of the delta features.
         - num_heads (int): Number of attention heads in the multi-head attention.
         - dim_ff_node_features (int): Dimension of the feedforward network model for node features after self-attention.
         - dim_ff_diffusion_time (int): Dimension of the feedforward network model for diffusion time after self-attention.

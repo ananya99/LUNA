@@ -11,8 +11,9 @@ class SelfAttention(nn.Module):
 
     Parameters:
     - node_features_dimensions (torch.Tensor): Number of input features.
-    - de (torch.Tensor): Dimensionality of edge embeddings.
+    - cell_image_embedding_dim (int): Dimensionality of the cell image embeddings.
     - diffusion_time_dimensions (torch.Tensor): Dimensionality of global features.
+    - delta_dimensions (int): Dimensionality of the delta features.
     - num_heads (int): Number of attention heads.
     - last_layer (bool): Flag indicating whether this layer is the last layer in the model.
     """
@@ -91,10 +92,10 @@ class SelfAttention(nn.Module):
         norm_positions = torch.norm(positions, dim=-1, keepdim=True)
         normalized_position = positions / (norm_positions + 1e-7)
 
-        transformed_positons = self.transform_positions_for_attn_mlp(
+        transformed_positions = self.transform_positions_for_attn_mlp(
             normalized_position
         )
-        return transformed_positons
+        return transformed_positions
 
     def transform_node_features(
         self,
@@ -120,12 +121,6 @@ class SelfAttention(nn.Module):
         transformed_time = diffusion_time.unsqueeze(1).expand(
             -1, node_features.size(1), -1
         )
-        
-        # print("\nTransformed shapes:")
-        # print("transformed_X:", transformed_X.shape)
-        # print("transformed_delta:", transformed_delta.shape)
-        # print("transformed_time:", transformed_time.shape)
-        # print("cell_images:", cell_images.shape if cell_images is not None else None)
         
         # Concatenate features            
         # Always concatenate with cell_images if encoder is configured

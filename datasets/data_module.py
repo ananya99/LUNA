@@ -230,14 +230,14 @@ class DataModule(AbstractDataModule):
         
         split_to_cell_image_embeddings_path = {
             'train': cfg.dataset.train_cell_image_embeddings_path,
-            'validation': cfg.dataset.validation_cell_image_embeddings_path,
+            'validation': None,
             'test': cfg.dataset.test_cell_image_embeddings_path,
         }
         cell_image_embeddings_path = split_to_cell_image_embeddings_path[split]
         
         split_to_cell_images_path = {
             'train': cfg.dataset.train_cell_images_path,
-            'validation': cfg.dataset.validation_cell_images_path,
+            'validation': None,
             'test': cfg.dataset.test_cell_images_path,
         }
         cell_images_path = split_to_cell_images_path[split]

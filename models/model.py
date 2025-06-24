@@ -150,6 +150,7 @@ class Model(nn.Module):
         positions = data.positions
         cell_images = data.cell_images
 
+        cell_images_encoded = None
         # Process cell images through encoder if they exist
         if cell_images is not None:
             content_type = determine_content_type(cell_images)
