@@ -10,14 +10,14 @@ import pytz
 
 all_outputs_dir ='/mlbio_scratch/anagupta/luna/runs'
 
-def create_and_save_config(name='', mode='baseline', debug=False, gpus=[5,6,7], data_dir='data/train_test_split_1'):
+def create_and_save_config(name, mode, debug, gpus, data_dir):
     date_str = datetime.now().strftime("%Y-%m-%d")
     time_str = datetime.now().strftime("%H-%M-%S")
         
     if name is not None:
-        output_subdir = name + ("_debug" if debug else "")
+        output_subdir = name + ("_sliced" if data_dir.startswith('sliced') else "") + ("_debug" if debug else "")
     else:
-        output_subdir = mode + ("_debug" if debug else "")
+        output_subdir = mode + ("_sliced" if data_dir.startswith('sliced') else "") + ("_debug" if debug else "")
     
     output_dir = os.path.join(all_outputs_dir, output_subdir, date_str + '_' + time_str)
     
@@ -35,6 +35,7 @@ def create_and_save_config(name='', mode='baseline', debug=False, gpus=[5,6,7], 
     cfg.dataset.maximum_graph_size.train=500
     cfg.dataset.maximum_graph_size.test=5000
     cfg.train.batch_size=4
+    # cfg.train.lr=0.0001
     cfg.model.hidden_dims.cell_image_embedding_dim=32
     cfg.model.hidden_dims.num_heads=16
 
@@ -69,12 +70,12 @@ def create_and_save_config(name='', mode='baseline', debug=False, gpus=[5,6,7], 
         pass
     elif mode == 'cnn':
         cfg.model.cell_image_encoder="CNN"
-        cfg.dataset.train_cell_images_path = data_directory + '/train_cell_images' 
-        cfg.dataset.test_cell_images_path = data_directory + '/test_cell_images' 
+        cfg.dataset.train_cell_images_path = data_directory + '/train_cell_images.tar' 
+        cfg.dataset.test_cell_images_path = data_directory + '/test_cell_images.tar' 
     elif mode == 'dinov2':
         cfg.model.cell_image_encoder="DINOv2"
-        cfg.dataset.train_cell_images_path = data_directory + '/train_cell_images' 
-        cfg.dataset.test_cell_images_path = data_directory + '/test_cell_images' 
+        cfg.dataset.train_cell_images_path = data_directory + '/train_cell_images.tar' 
+        cfg.dataset.test_cell_images_path = data_directory + '/test_cell_images.tar' 
     elif mode == 'mae' or mode == 'embed':
         cfg.model.cell_image_encoder="MAE_embeddings"
         cfg.dataset.train_cell_image_embeddings_path = data_directory + '/train_embeddings.pt'
@@ -93,11 +94,17 @@ def create_and_save_config(name='', mode='baseline', debug=False, gpus=[5,6,7], 
 if __name__ == "__main__":
     # get arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('--name', type=str, help='Name of the configuration, if not provided, mode and date will be used')
+    parser.add_argument('--name', type=str, default=None, help='Name of the configuration, if not provided, mode and date will be used')
     parser.add_argument('--debug', action='store_true', help='Enable debug mode')
     parser.add_argument('--mode', type=str, default='baseline', help='Mode to use, options: baseline, cnn, dinov2, mae, embed')
     parser.add_argument('--gpus', type=int, nargs='+', default=[5,6,7], help='GPUs to use, Pass as integers separated by spaces')
-    parser.add_argument('--data_dir', type=str, default='data/train_test_split_1', help='data directory relative to "/mlbio_scratch/anagupta/luna/"')
+    parser.add_argument('--data_dir', type=str, default='data/train_test_split_3N2D_1D_2', help='data directory relative to "/mlbio_scratch/anagupta/luna/"')
     args = parser.parse_args()
     
-    create_and_save_config(name=args.name, mode=args.mode, debug=args.debug, gpus=args.gpus, data_dir=args.data_dir)
+    name = args.name
+    mode = args.mode
+    debug = args.debug
+    gpus = args.gpus
+    data_dir = args.data_dir
+    # data_dir = "sliced_data/train_test_split_3N2D_1D"
+    create_and_save_config(name=name, mode=mode, debug=debug, gpus=gpus, data_dir=data_dir)

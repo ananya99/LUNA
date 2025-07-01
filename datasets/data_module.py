@@ -159,38 +159,35 @@ class Dataset(InMemoryDataset):
 
     def _generate_slice_indices(self):
         slices = self.input_data["cell_section"].values
-        current_slice, slice_start, slice_ = slices[0], 0, []
 
-        for i in range(1, len(slices)):
-            # Check for slice change or end of slices array
-            if slices[i] != current_slice or i == len(slices) - 1:
-                # Determine the end of the current slice
-                slice_end = i + 1 if i == len(slices) - 1 else i
+        # get the indices where the slice changes
+        end_indices = np.where(slices[1:] != slices[:-1])[0] + 1
+        end_indices = np.concatenate([end_indices, [len(slices)]])
+        
+        print("[DEBUG] end_indices: ", end_indices)
+        print("[DEBUG] np.diff(end_indices): ", np.diff(end_indices))
 
-                # Apply different logic based on whether maximum_graph_size is set
-                if self.maximum_graph_size is None:
-                    slice_.extend([slice_start, slice_end])
-                else:
-                    # Generate indices with step size of maximum_graph_size
-                    new_indices = np.arange(slice_start, slice_end, self.maximum_graph_size).astype(int)
-                    slice_.extend(new_indices)
-                    slice_.append(slice_end)
+        split_indices = [0]
+        prev_index = 0
 
-                # Update the current slice and start for the next one
-                current_slice, slice_start = slices[i], i      
-
-        print(self.split)
-        print(self.maximum_graph_size)
-        print(np.unique(slice_))
+        for end_index in end_indices:
+                size = end_index - prev_index
+                while size > self.maximum_graph_size:
+                        prev_index += self.maximum_graph_size
+                        split_indices.append(prev_index)
+                        size -= self.maximum_graph_size
+                prev_index = end_index
+                split_indices.append(prev_index)
 
         # Slice cell_images based on the generated indices
-        if self.cell_images is not None:
-            sliced_cell_images = []
-            for start, end in zip(slice_[:-1], slice_[1:]):
-                sliced_cell_images.append(self.cell_images[start:end])
-            self._data.sliced_cell_images = sliced_cell_images
+        # if self.cell_images is not None:
+        #     sliced_cell_images = []
+        #     for start, end in zip(split_indices[:-1], split_indices[1:]):
+        #         sliced_cell_images.append(self.cell_images[start:end])
+        #     self._data.sliced_cell_images = sliced_cell_images
 
-        return np.unique(slice_)
+        print("[DEBUG] final sliced indices: ", split_indices)
+        return split_indices
 
 
 class DataModule(AbstractDataModule):
@@ -310,24 +307,43 @@ class DataModule(AbstractDataModule):
         all_images = {}
 
         # Traverse all .tar files and extract .npy images into a dict
-        for root, _, files in os.walk(cell_images_path):
-            for file in files:
-                if file.endswith('.tar'):
-                    tar_file_path = os.path.join(root, file)
-                    with tarfile.open(tar_file_path, 'r') as tar:
-                        for tarinfo in tar:
-                            if tarinfo.name.endswith('.npy'):
-                                cell_id = os.path.basename(tarinfo.name).replace('.npy', '')
-                                file_obj = tar.extractfile(tarinfo)
-                                if file_obj is not None:
-                                    image_data = file_obj.read()
-                                    np_image = np.load(BytesIO(image_data)).astype(np.float32)
-                                    tensor_image = torch.from_numpy(np_image)
-                                    all_images[cell_id] = tensor_image
+        if os.path.isdir(cell_images_path):
+            for root, _, files in os.walk(cell_images_path):
+                for file in files:
+                    if file.endswith('.tar'):
+                        tar_file_path = os.path.join(root, file)
+                        with tarfile.open(tar_file_path, 'r') as tar:
+                            for tarinfo in tar:
+                                if tarinfo.name.endswith('.npy'):
+                                    cell_id = os.path.basename(tarinfo.name).replace('.npy', '')
+                                    file_obj = tar.extractfile(tarinfo)
+                                    if file_obj is not None:
+                                        image_data = file_obj.read()
+                                        np_image = np.load(BytesIO(image_data)).astype(np.float32)
+                                        tensor_image = torch.from_numpy(np_image)
+                                        all_images[cell_id] = tensor_image
 
-                    print(f"[INFO] Finished extracting from {tar_file_path}, total images so far: {len(all_images)}")
+                        print(f"[INFO] Finished extracting from {tar_file_path}, total images so far: {len(all_images)}")
+                    else:
+                        raise ValueError(f"Invalid cell images path: {cell_images_path}")
+        else:
+            if cell_images_path.endswith('.tar'):
+                with tarfile.open(cell_images_path, 'r') as tar:
+                    for tarinfo in tar:
+                        if tarinfo.name.endswith('.npy'):
+                            cell_id = os.path.basename(tarinfo.name).replace('.npy', '')
+                            file_obj = tar.extractfile(tarinfo)
+                            if file_obj is not None:
+                                image_data = file_obj.read()
+                                np_image = np.load(BytesIO(image_data)).astype(np.float32)
+                                tensor_image = torch.from_numpy(np_image)
+                                all_images[cell_id] = tensor_image
+            else:
+                raise ValueError(f"Invalid cell images path: {cell_images_path}")
 
         print(f"[INFO] Finished loading {len(all_images)} images for split '{split}'.")
+        if all_images is None:
+            raise ValueError(f"No images loaded for split '{split}'.")
         return all_images
     
     def load_cell_image_embeddings(self, cfg: omegaconf.DictConfig, split, num_cells) -> Dict[str, torch.Tensor]:
@@ -370,17 +386,18 @@ class DataModule(AbstractDataModule):
         """
         if isinstance(cell_images_or_embeddings, dict):
             print("cell_images_or_embeddings is a dict")
-            original_cell_ids = data["original_cell_id"].values
+            original_cell_ids = data["original_cell_id"].values if "original_cell_id" in data.columns else data.index.values
             present_mask = np.isin(original_cell_ids, list(cell_images_or_embeddings.keys()))
             if not present_mask.all():
                 missing = original_cell_ids[~present_mask]
                 print(f"[WARNING] {len(missing)} cell_ids missing in image dict. Ignoring them.")
             filtered_ids = original_cell_ids[present_mask]
+            print(f"[DEBUG] filtered_ids: {filtered_ids}")
             try:
                 cell_images_tensor = torch.stack([cell_images_or_embeddings[cid] for cid in filtered_ids])
                 data = data[present_mask]
             except Exception as e:
-                raise ValueError(f"Error stacking tensors for IDs: {filtered_ids[:5]}...") from e
+                raise ValueError(f"Error stacking tensors for IDs: {filtered_ids}, error: {e}") from e
 
         elif isinstance(cell_images_or_embeddings, torch.Tensor):
             print("cell_images_or_embeddings is a tensor (mock images or embeddings)")
