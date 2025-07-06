@@ -278,7 +278,20 @@ class DataModule(AbstractDataModule):
         data = standardise_dataframe_colnames(data)
         assert all(column in data.columns for column in ['coord_X', 'coord_Y', 'cell_section', 'cell_class'])
         
+        # Remove slices with less than 50 cells
+        data = self.remove_slices_with_less_than_n_cells(data, n=50)
+        
         return data, data.shape[0]
+    
+    def remove_slices_with_less_than_n_cells(self, data, n=50):
+        """
+        Remove slices with less than n cells.
+        """
+        cell_section_counts = data['cell_section'].value_counts()
+        
+        filter_cell_sections = cell_section_counts[cell_section_counts >= n].index
+        data = data[data['cell_section'].isin(filter_cell_sections)]
+        return data
     
     def load_cell_images(self, cfg: omegaconf.DictConfig, split, num_cells) -> Dict[str, torch.Tensor]:
         """

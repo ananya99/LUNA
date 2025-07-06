@@ -60,7 +60,7 @@ def prepare_data(data_path, train_mask, test_mask, embedding_file_path = None, c
     test_data.to_csv(os.path.join(output_path, "test_data.csv"), index=False)
     print(f"Saved {len(test_data)} testing data to {output_path}")
     
-    cell_to_donor = dict(zip(data['cell_id'], data['donor']))
+    # cell_to_donor = dict(zip(data['cell_id'], data['donor']))
     
     if embedding_file_path is not None:
         embeddings = torch.load(embedding_file_path)
@@ -82,7 +82,7 @@ def prepare_data(data_path, train_mask, test_mask, embedding_file_path = None, c
             tarfile.open(test_tar_path, "w") as test_tar:
 
             n_train, n_test = 0, 0
-            skipped_cells = []
+            skipped_cells = 0
             for member in merged_tar.getmembers():
                 if member.isfile() and member.name.endswith(".npy"):
                     cell_id = os.path.splitext(os.path.basename(member.name))[0]
@@ -99,8 +99,8 @@ def prepare_data(data_path, train_mask, test_mask, embedding_file_path = None, c
                         n_test += 1
                     else:
                         # print(f"Skipping cell {cell_id} from {member.name} not found in train or test data")
-                        skipped_cells.append(cell_id)
-            print(f"Skipped {len(skipped_cells)} cells not found in train or test data: {skipped_cells[:10]}")
+                        skipped_cells += 1
+            print(f"Skipped {skipped_cells} cells not found in train or test data")
         print(f"Saved {n_train} training cell images to {train_tar_path}")
         print(f"Saved {n_test} testing cell images to {test_tar_path}")
 
@@ -111,19 +111,19 @@ def main():
     args = parser.parse_args()
 
     data_dir = '/mlbio_scratch/anagupta/xenium_preprocessed/' if args.data_dir is None else args.data_dir
-    output_dir = '/mlbio_scratch/anagupta/luna/data/train_test_split_3N2D_1D_2' if args.output_dir is None else args.output_dir
+    output_dir = '/mlbio_scratch/anagupta/luna/sliced_data/train_test_split_3L_1R' if args.output_dir is None else args.output_dir
     
-    # data_dir = '/mlbio_scratch/anagupta/xenium_preprocessed/sliced_data' if args.data_dir is None else args.data_dir
+    data_dir = '/mlbio_scratch/anagupta/xenium_preprocessed/' if args.data_dir is None else args.data_dir
     # output_dir = '/mlbio_scratch/anagupta/luna/sliced_data/train_test_split_3L_1R' if args.output_dir is None else args.output_dir
 
-    data_path = os.path.join(data_dir, '10xgenomics_alzheimers_disease_mouse_data_shuffled.csv')
-    # data_path = os.path.join(data_dir, 'sliced_data.csv')
+    # data_path = os.path.join(data_dir, '10xgenomics_alzheimers_disease_mouse_data_shuffled.csv')
+    data_path = os.path.join(data_dir, 'sliced_data.csv')
     embedding_file_path = os.path.join(data_dir, 'cell_embeddings.pt')
     cell_images_path = os.path.join(data_dir, 'cell_images.tar')
     
     # Strategy 1: Split based on donors(One TgCRND8 donor is in the test set, rest are in the train set)
-    test_donors = {"TgCRND8_5_7"}
-    train_mask, test_mask = create_split_mask_based_on_donors(data_path, test_donors)
+    # test_donors = {"TgCRND8_5_7"}
+    # train_mask, test_mask = create_split_mask_based_on_donors(data_path, test_donors)
     
     # Strategy 2: Split based on donors(all the Normal donors are in the train set, and all the TgCRND8(Diseased) donors are in the test set)
     # test_donors = {"TgCRND8_5_7", "TgCRND8_2_5", "TgCRND8_17_9"}
@@ -134,11 +134,13 @@ def main():
     # __5, __6, __7, __8, 
     # __9, __10, __11, __12, 
     # __13, __14, __15, __16]
-    # test_cell_section_suffixes = {"__4", "__8", "__12", "__16"}
-    # train_mask, test_mask = create_split_mask_based_on_cell_sections(data_path, test_cell_section_suffixes)
+    test_cell_section_suffixes = {"__4", "__8", "__12", "__16"}
+    train_mask, test_mask = create_split_mask_based_on_cell_sections(data_path, test_cell_section_suffixes)
 
-    # TODO: Add an argument to specify how to split the data
+    print(f"Preparing the data...")
     prepare_data(data_path, train_mask, test_mask, embedding_file_path=embedding_file_path, cell_images_path=cell_images_path, output_path=output_dir)
 
 if __name__ == "__main__":
+    print(f"Starting the script...")
     main()
+    print(f"Finished!!")

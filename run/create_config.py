@@ -36,7 +36,7 @@ def create_and_save_config(name, mode, debug, gpus, data_dir):
     cfg.dataset.maximum_graph_size.test=5000
     cfg.train.batch_size=4
     # cfg.train.lr=0.0001
-    cfg.model.hidden_dims.cell_image_embedding_dim=32
+    cfg.model.hidden_dims.cell_image_embedding_dim=64
     cfg.model.hidden_dims.num_heads=16
 
     if debug:
@@ -47,7 +47,7 @@ def create_and_save_config(name, mode, debug, gpus, data_dir):
         cfg.train.n_epochs=2
         cfg.model.diffusion_steps=2
     else:
-        cfg.train.n_epochs=1000
+        cfg.train.n_epochs=750
 
     cfg.dataset.gene_columns_start = 13
     cfg.dataset.gene_columns_end = 360
@@ -106,5 +106,5 @@ if __name__ == "__main__":
     debug = args.debug
     gpus = args.gpus
     data_dir = args.data_dir
-    # data_dir = "sliced_data/train_test_split_3N2D_1D"
+    # data_dir = "sliced_data/train_test_split_3L_1R"
     create_and_save_config(name=name, mode=mode, debug=debug, gpus=gpus, data_dir=data_dir)

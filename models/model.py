@@ -97,13 +97,9 @@ class Model(nn.Module):
         self.mlp_in_position = PositionsMLP(hidden_mlp_dims["pos"])
 
         self.image_encoder = ImageEncoder(hidden_dims["cell_image_embedding_dim"], self.cell_image_encoder)
-
-        # List of TransformerLayer instances
-        self.transformer_layers = nn.ModuleList(
-            [
-                TransformerLayer(
+        
+        self.fusion_transformer_layer = TransformerLayer(
                     node_features_dimensions=hidden_dims["dx"],
-                    cell_image_encoder=self.cell_image_encoder,
                     cell_image_embedding_dim=hidden_dims["cell_image_embedding_dim"],
                     diffusion_time_dimensions=hidden_dims["dy"],
                     delta_dimensions=hidden_dims["dd"],
@@ -112,7 +108,20 @@ class Model(nn.Module):
                     dim_ff_diffusion_time=hidden_dims["dim_ffy"],
                     last_layer=False,
                 )
-                for _ in range(n_layers)
+
+        # List of TransformerLayer instances
+        self.transformer_layers = nn.ModuleList(
+            [
+                TransformerLayer(
+                    node_features_dimensions=hidden_dims["dx"],
+                    diffusion_time_dimensions=hidden_dims["dy"],
+                    delta_dimensions=hidden_dims["dd"],
+                    num_heads=hidden_dims["num_heads"],
+                    dim_ff_node_features=hidden_dims["dim_ffX"],
+                    dim_ff_diffusion_time=hidden_dims["dim_ffy"],
+                    last_layer=False,
+                )
+                for _ in range(n_layers-1)
             ]
         )
 
@@ -149,10 +158,13 @@ class Model(nn.Module):
         diffusion_time = data.diffusion_time
         positions = data.positions
         cell_images = data.cell_images
+        
 
         cell_images_encoded = None
         # Process cell images through encoder if they exist
-        if cell_images is not None:
+        if cell_images is None:
+            print("No cell images provided to the model!!!")
+        else:
             content_type = determine_content_type(cell_images)
             if content_type == "image":
                 batch_size, num_cells = cell_images.shape[0], cell_images.shape[1]
@@ -180,10 +192,15 @@ class Model(nn.Module):
             positions=transformed_positions,
             node_mask=node_mask,
         ).mask()
+        
+        transformed_features = self.fusion_transformer_layer(transformed_features)
+        
+        print("[DEBUG] transformer fusion layer done!!!")
 
         # Apply transformer layers
-        for layer in self.transformer_layers:
+        for i, layer in enumerate(self.transformer_layers):
             transformed_features = layer(transformed_features)
+            print("[DEBUG] transformer layer", i)
 
         # Process output features using MLPs
         transformed_node_features = self.mlp_out_node_features(

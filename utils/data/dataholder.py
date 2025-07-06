@@ -57,7 +57,7 @@ class DataHolder:
         """
         self.positions = positions
         self.node_features = node_features
-        self.cell_images = cell_images if cell_images is not None else None
+        self.cell_images = cell_images
         self.cell_class = cell_class 
         self.cell_ID = cell_ID
         self.t_int = t_int
@@ -88,7 +88,7 @@ class DataHolder:
         node_features_mask = node_mask.unsqueeze(-1)  # bs, n, 1
 
         self.node_features = apply_mask(self.node_features, node_mask)
-        self.cell_images = apply_mask(self.cell_images, node_mask) if self.cell_images is not None else None
+        self.cell_images = apply_mask(self.cell_images, node_mask)
         self.positions = apply_mask(self.positions, node_mask)
         if self.positions is not None:
             self.positions = center_positions(self.positions, node_mask)

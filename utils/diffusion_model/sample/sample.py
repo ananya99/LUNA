@@ -49,6 +49,10 @@ def iterate_sampling(self, z_t: torch.Tensor, batch: DataHolder) -> torch.Tensor
             (1, 1), s_int, dtype=torch.long, device=batch.node_features.device
         )
         z_s = sample_zs_from_zt(self, z_t, s_array)
+        
+        if hasattr(batch, "cell_images"):
+            z_s.cell_images = batch.cell_images
+        
         z_t = z_s
 
     return z_t
@@ -74,6 +78,9 @@ def sample_from_single_graph(
 
     # Sample noise z_t from the batch
     z_t = sample_noise(self, batch)
+    
+    if hasattr(batch, "cell_images"):
+        z_t.cell_images = batch.cell_images
 
     # Perform iterative sampling over diffusion steps
     sampled_graph = iterate_sampling(self, z_t, batch)

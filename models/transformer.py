@@ -32,11 +32,10 @@ class TransformerLayer(nn.Module):
     def __init__(
         self,
         node_features_dimensions: int,
-        cell_image_encoder: str,
-        cell_image_embedding_dim: int,
         delta_dimensions: int,
         diffusion_time_dimensions: int,
         num_heads: int,
+        cell_image_embedding_dim: int = 0,
         dim_ff_node_features: int = 2048,
         dim_ff_diffusion_time: int = 2048,
         dropout: float = 0.1,
@@ -67,7 +66,6 @@ class TransformerLayer(nn.Module):
         super().__init__()
         self.self_attn = SelfAttention(
             node_features_dimensions=node_features_dimensions,
-            cell_image_encoder=cell_image_encoder,
             cell_image_embedding_dim=cell_image_embedding_dim,
             delta_dimensions=delta_dimensions,
             diffusion_time_dimensions=diffusion_time_dimensions,
@@ -127,7 +125,7 @@ class TransformerLayer(nn.Module):
         - Dataholder: Updated node features, diffusion time, positions, and node mask.
         """
         node_features = features.node_features
-        cell_images = features.cell_images if features.cell_images is not None else None
+        cell_image_features = features.cell_images
         diffusion_time = features.diffusion_time
         positions = features.positions
         node_mask = features.node_mask
@@ -141,7 +139,7 @@ class TransformerLayer(nn.Module):
             transformed_position,
         ) = self.self_attn(
             node_features=node_features,
-            cell_images=cell_images,
+            cell_image_features=cell_image_features,
             diffusion_time=diffusion_time,
             positions=positions,
             node_mask=node_mask,
