@@ -95,8 +95,7 @@ class DINOv2Encoder(nn.Module):
         # Add an mlp layer to reduce the dimensionality to the desired hidden_dims
         self.mlp = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(384, hidden_dims),
-            nn.ReLU()
+            nn.Linear(384, hidden_dims)
         )
 
     def forward(self, x):

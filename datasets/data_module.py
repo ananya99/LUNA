@@ -400,7 +400,9 @@ class DataModule(AbstractDataModule):
         if isinstance(cell_images_or_embeddings, dict):
             print("cell_images_or_embeddings is a dict")
             original_cell_ids = data["original_cell_id"].values if "original_cell_id" in data.columns else data.index.values
-            present_mask = np.isin(original_cell_ids, list(cell_images_or_embeddings.keys()))
+            available_cell_ids = set(cell_images_or_embeddings.keys())
+            present_mask = np.array([cid in available_cell_ids for cid in original_cell_ids])
+
             if not present_mask.all():
                 missing = original_cell_ids[~present_mask]
                 print(f"[WARNING] {len(missing)} cell_ids missing in image dict. Ignoring them.")

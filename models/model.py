@@ -96,11 +96,12 @@ class Model(nn.Module):
         # MLP for processing input positions
         self.mlp_in_position = PositionsMLP(hidden_mlp_dims["pos"])
 
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.image_encoder = ImageEncoder(hidden_dims["cell_image_embedding_dim"], self.cell_image_encoder)
         
         self.fusion_transformer_layer = TransformerLayer(
                     node_features_dimensions=hidden_dims["dx"],
-                    cell_image_embedding_dim=hidden_dims["cell_image_embedding_dim"],
+                    cell_image_embedding_dim=hidden_dims["cell_image_embedding_dim"] if self.cell_image_encoder else 0,
                     diffusion_time_dimensions=hidden_dims["dy"],
                     delta_dimensions=hidden_dims["dd"],
                     num_heads=hidden_dims["num_heads"],
@@ -163,7 +164,7 @@ class Model(nn.Module):
         cell_images_encoded = None
         # Process cell images through encoder if they exist
         if cell_images is None:
-            print("No cell images provided to the model!!!")
+            print("No cell images provided to the model!")
         else:
             content_type = determine_content_type(cell_images)
             if content_type == "image":
@@ -195,12 +196,10 @@ class Model(nn.Module):
         
         transformed_features = self.fusion_transformer_layer(transformed_features)
         
-        print("[DEBUG] transformer fusion layer done!!!")
 
         # Apply transformer layers
         for i, layer in enumerate(self.transformer_layers):
             transformed_features = layer(transformed_features)
-            print("[DEBUG] transformer layer", i)
 
         # Process output features using MLPs
         transformed_node_features = self.mlp_out_node_features(

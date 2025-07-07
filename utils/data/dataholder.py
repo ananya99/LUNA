@@ -16,8 +16,6 @@ def apply_mask(tensor, mask, mask_dim=-1):
     if tensor is None:
         return None
         
-    # print("mask.shape:", mask.shape)
-    # print("tensor.shape:", tensor.shape)
     if len(tensor.shape) == 4:  # This is a cell image tensor (batch_size, num_nodes, height, width)
         # Ensure mask has shape (batch_size, num_nodes, 1, 1)
         if len(mask.shape) == 2:  # (batch_size, num_nodes)

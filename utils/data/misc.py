@@ -26,11 +26,9 @@ def to_batch(data: DataHolder, device=None) -> DataHolder:
     node_features, node_mask = to_dense_batch(x=data.node_features, batch=data.batch)
     if hasattr(data, "cell_images"):
         cell_images, _ = to_dense_batch(x=data.cell_images, batch=data.batch)
-        print("cell_images present in to_batch, shape: ", cell_images.shape)
         if cell_images.dim() == 2:
             cell_images = cell_images.unsqueeze(-1)
     else:
-        print("cell_images is None in to_batch!!!!")
         cell_images = None
         
     pos, _ = to_dense_batch(x=data.positions, batch=data.batch)

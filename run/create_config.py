@@ -47,7 +47,7 @@ def create_and_save_config(name, mode, debug, gpus, data_dir):
         cfg.train.n_epochs=2
         cfg.model.diffusion_steps=2
     else:
-        cfg.train.n_epochs=750
+        cfg.train.n_epochs=1000
 
     cfg.dataset.gene_columns_start = 13
     cfg.dataset.gene_columns_end = 360

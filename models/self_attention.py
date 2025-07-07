@@ -139,12 +139,12 @@ class SelfAttention(nn.Module):
                 dim=-1,
             )
             
-        print("[Debugggg] concat feature shape", concatenated_features.shape)
-        print("self.cell_image_embedding_dim: ", self.cell_image_embedding_dim)
-        if cell_image_features is None:
-            print("cell_image_features is None")
-        else:
-            print("cell_image_features shape: ", cell_image_features.shape)
+        # print("[Debugggg] concat feature shape", concatenated_features.shape)
+        # print("self.cell_image_embedding_dim: ", self.cell_image_embedding_dim)
+        # if cell_image_features is None:
+        #     print("cell_image_features is None")
+        # else:
+        #     print("cell_image_features shape: ", cell_image_features.shape)
         
         # Apply linear transformation to match expected dimensions
         concatenated_features = self.concatenated_features(concatenated_features)
