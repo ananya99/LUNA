@@ -155,3 +155,86 @@ def plot_scatter_visualization(metadata_true, metadata_pred, uniques, dir):
     plt.savefig(path, bbox_inches="tight", dpi=300)
     plt.show()
     plt.close()
+    
+def plot_scatter_visualization_custom(metadata1, metadata2, dir, metadata1_title="Groundtruth", metadata2_title="Prediction"):
+    fig, axarr = plt.subplots(1, 2, figsize=(16, 6))
+    
+    if 'cell_class' in metadata1.columns:
+        uniques = metadata1['cell_class'].unique()
+
+        # Define the color palette for the unique categories
+        pl_palette = sns.color_palette(cc.glasbey, n_colors=len(uniques))
+        palette_dict = dict(zip(uniques, pl_palette))
+        hue="cell_class"
+    else: 
+        palette_dict = None
+        hue=None
+
+    # Groundtruth Plot
+    axarr[0].set_title(metadata1_title+" Cell locations", fontsize=16)  # Adjust title font size
+    g1 = sns.scatterplot(
+        data=metadata1,
+        x="coord_X",
+        y="coord_Y",
+        hue=hue,
+        s=15,
+        ax=axarr[0],
+        palette=palette_dict,
+        legend=False,  # Do not automatically create a legend
+    )
+    g1.set_xlabel("X", fontsize=14)  # Adjust X-axis label font size
+    g1.set_ylabel("Y", fontsize=14)  # Adjust Y-axis label font size
+    
+    if 'cell_class' in metadata2.columns:
+        uniques = metadata2['cell_class'].unique()
+
+        # Define the color palette for the unique categories
+        pl_palette = sns.color_palette(cc.glasbey, n_colors=len(uniques))
+        palette_dict = dict(zip(uniques, pl_palette))
+        hue="cell_class"
+    else:
+        palette_dict = None
+        hue = None
+    
+    # Prediction Plot
+    axarr[1].set_title(metadata2_title + " Cell locations", fontsize=16)  # Adjust title font size
+    g2 = sns.scatterplot(
+        data=metadata2,
+        x="coord_X",
+        y="coord_Y",
+        hue=hue,
+        s=15,
+        ax=axarr[1],
+        palette=palette_dict,
+        legend=False,  # Do not automatically create a legend
+    )
+    g2.set_xlabel("X", fontsize=14)  # Adjust X-axis label font size
+    g2.set_ylabel("Y", fontsize=14)  # Adjust Y-axis label font size
+
+    # Create custom legend
+    if palette_dict is not None:
+        legend_elements = [
+            plt.Line2D(
+                [0],
+                [0],
+                marker="o",
+                color="w",
+                label=cat,
+                markerfacecolor=palette_dict[cat],
+                markersize=10,
+            )
+            for cat in uniques
+        ]
+        ncol = max(1, len(uniques) // 4)  # Number of columns in the legend
+        fig.legend(
+            handles=legend_elements,
+            loc="upper center",
+            ncol=ncol,
+            bbox_to_anchor=(0.5, -0.05),
+        )
+
+    # Save the plot
+    path = f"{dir}/class_scatter_plot_{metadata1_title}_{metadata2_title}.pdf"
+    plt.savefig(path, bbox_inches="tight", dpi=300)
+    plt.show()
+    plt.close()
