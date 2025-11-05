@@ -152,12 +152,19 @@ def main():
     images = np.load(os.path.join(data_dir, 'slice_images.npz'), allow_pickle=True)
     print("Loaded images: ", images.keys())
 
-    directories = ['/mlbio_scratch/anagupta/luna/runs/baseline_sliced/2025-07-02_16-12-52/test_results/test/model_2025-07-02_epoch_999/TgCRND8_5_7__4_0',
-                   '/mlbio_scratch/anagupta/luna/runs/baseline_sliced/2025-07-02_16-12-52/test_results/test/model_2025-07-02_epoch_999/TgCRND8_5_7__8_0',
-                   '/mlbio_scratch/anagupta/luna/runs/baseline_sliced/2025-07-02_16-12-52/test_results/test/model_2025-07-02_epoch_999/TgCRND8_5_7__9_0',
-                   '/mlbio_scratch/anagupta/luna/runs/baseline_sliced/2025-07-02_16-12-52/test_results/test/model_2025-07-02_epoch_999/TgCRND8_5_7__10_0',
-                   '/mlbio_scratch/anagupta/luna/runs/baseline_sliced/2025-07-02_16-12-52/test_results/test/model_2025-07-02_epoch_999/TgCRND8_5_7__11_0']
+    # directories = ['/mlbio_scratch/anagupta/luna/runs/baseline_sliced/2025-07-02_16-12-52/test_results/test/model_2025-07-02_epoch_999/TgCRND8_5_7__4_0',
+    #                '/mlbio_scratch/anagupta/luna/runs/baseline_sliced/2025-07-02_16-12-52/test_results/test/model_2025-07-02_epoch_999/TgCRND8_5_7__8_0',
+    #                '/mlbio_scratch/anagupta/luna/runs/baseline_sliced/2025-07-02_16-12-52/test_results/test/model_2025-07-02_epoch_999/TgCRND8_5_7__9_0',
+    #                '/mlbio_scratch/anagupta/luna/runs/baseline_sliced/2025-07-02_16-12-52/test_results/test/model_2025-07-02_epoch_999/TgCRND8_5_7__10_0',
+    #                '/mlbio_scratch/anagupta/luna/runs/baseline_sliced/2025-07-02_16-12-52/test_results/test/model_2025-07-02_epoch_999/TgCRND8_5_7__11_0']
     
+    base_dir = '/mlbio_scratch/anagupta/luna/runs/baseline_sliced/2025-07-03_07-06-50/test_results/test/model_2025-07-03_epoch_999'
+    
+    directories = []
+    for sub_dir in os.listdir(base_dir):
+        if sub_dir.startswith("TgCRND8") or sub_dir.startswith("wildtype"):
+            dir = os.path.join(base_dir, sub_dir)
+            directories.append(dir)
 
     for directory in directories:
         slice_name = '_'.join(directory.rstrip('/').split('/')[-1].split('_')[:-1])
@@ -168,7 +175,6 @@ def main():
         pred_coords = pred_df[['coord_X', 'coord_Y']].values
         num_samples = pred_coords.shape[0]
         print("num_samples: ", num_samples)
-        print("pred_coords: ", pred_coords)
         
         img = images[slice_name]
         shape_guided_coords = sample_points_from_tissue_image(img, num_samples, directory)
@@ -178,7 +184,7 @@ def main():
         
     process_directories(directories)
     
-    results_file_path = os.path.join("/mlbio_scratch/anagupta/luna/runs/baseline_sliced/2025-07-02_16-12-52/test_results/test/model_2025-07-02_epoch_999", "test_results3.csv")
+    results_file_path = os.path.join(base_dir, "test_results2.csv")
     
     for directory in directories:
         slice_name = '_'.join(directory.rstrip('/').split('/')[-1].split('_')[:-1])
